@@ -1,3 +1,5 @@
+const clean = (val?: string) => val ? val.trim().replace(/^["']|["']$/g, '') : '';
+
 export default async function handler(req: any, res: any) {
   const { code, state, error } = req.query;
   const origin = getOrigin(req);
@@ -8,18 +10,22 @@ export default async function handler(req: any, res: any) {
     return res.redirect(`${origin}/#oauth_error=OAuth%20state%20validation%20failed`);
   }
 
-  const clientId = process.env.GITHUB_CLIENT_ID;
-  const clientSecret = process.env.GITHUB_CLIENT_SECRET;
+  const clientId = clean(process.env.GITHUB_CLIENT_ID);
+  const clientSecret = clean(process.env.GITHUB_CLIENT_SECRET);
   if (!clientId || !clientSecret) return res.redirect(`${origin}/#oauth_error=GitHub%20OAuth%20is%20not%20configured`);
 
+  const redirectUri = getRedirectUri(req);
   const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
     method: 'POST',
     headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-    body: JSON.stringify({ client_id: clientId, client_secret: clientSecret, code, redirect_uri: getRedirectUri(req) }),
+    body: JSON.stringify({ client_id: clientId, client_secret: clientSecret, code, redirect_uri: redirectUri }),
   });
   const token = await tokenResponse.json();
   res.setHeader('Set-Cookie', 'github_oauth_state=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0');
-  if (!token.access_token) return res.redirect(`${origin}/#oauth_error=${encodeURIComponent(token.error_description || 'GitHub OAuth exchange failed')}`);
+  if (!token.access_token) {
+    const errorMsg = token.error_description || token.error || 'GitHub OAuth exchange failed';
+    return res.redirect(`${origin}/#oauth_error=${encodeURIComponent(errorMsg)}`);
+  }
   return res.redirect(`${origin}/#oauth_token=${encodeURIComponent(token.access_token)}`);
 }
 
@@ -31,8 +37,12 @@ function parseCookies(value: string): Record<string, string> {
 }
 
 function getRedirectUri(req: any) {
-  if (process.env.GITHUB_REDIRECT_URI) return process.env.GITHUB_REDIRECT_URI;
+  const custom = clean(process.env.GITHUB_REDIRECT_URI);
+  if (custom) return custom;
   const host = req.headers['x-forwarded-host'] || req.headers.host;
+  const protocol = req.headers['x-forwarded-proto'] || 'https';
+  return `${protocol}://${host}/api/auth/github/callback`;
+}
   const protocol = req.headers['x-forwarded-proto'] || 'https';
   return `${protocol}://${host}/api/auth/github/callback`;
 }

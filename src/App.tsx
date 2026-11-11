@@ -517,8 +517,8 @@ export default function App() {
 
         {/* STEP 0 */}
         {appStep === 'welcome' && !showAuth && (
-          <div className="max-w-3xl mx-auto text-center min-w-0">
-            <h2 className="welcome-title font-black leading-tight text-white">Developer <span className="text-green-400">Ascend</span></h2>
+          <div className="max-w-4xl mx-auto text-center min-w-0">
+            <h2 className="welcome-title font-black leading-tight text-green-400 uppercase tracking-wide">DEVELOPER ASCEND</h2>
             <p className="welcome-quote italic text-gray-300 font-medium leading-relaxed max-w-2xl mx-auto mt-8">“Programs must be written for people to read, and only incidentally for machines to execute.”</p>
             <button onClick={() => setShowAuth(true)} className="mt-10 px-12 py-5 rounded-2xl bg-white text-gray-950 font-black text-xs uppercase tracking-[0.2em] shadow-2xl shadow-white/10 hover:bg-green-400 transition-all">Get Started</button>
           </div>
