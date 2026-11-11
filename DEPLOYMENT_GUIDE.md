@@ -1,6 +1,6 @@
 # Quick Start Guide: Deployment
 
-This guide walks you through deploying GitHubCrazy.com to production with the new GitHub onboarding, user tracking, and follow system.
+This guide walks you through deploying Developer Ascend to production with the new GitHub onboarding, user tracking, and follow system.
 
 ## Step 1: Provision a PostgreSQL Database
 
@@ -34,7 +34,7 @@ GITHUB_REDIRECT_URI=https://yourdomain.com/api/auth/github/callback
 
 # Optional support-project defaults
 SUPPORT_REPO_OWNER=SIMARSINGHRAYAT
-SUPPORT_REPO_NAME=GitHubCrazy.com
+SUPPORT_REPO_NAME=Developer-Ascend
 SUPPORT_MAINTAINER=SIMARSINGHRAYAT
 ```
 
@@ -43,7 +43,7 @@ SUPPORT_MAINTAINER=SIMARSINGHRAYAT
 1. Go to https://github.com/settings/developers
 2. Click "New OAuth App"
 3. Fill in:
-   - **Application name**: GitHubCrazy
+   - **Application name**: Developer Ascend
    - **Homepage URL**: https://yourdomain.com
    - **Authorization callback URL**: https://yourdomain.com/api/auth/github/callback
 4. Copy Client ID and generate Client Secret

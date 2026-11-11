@@ -2,7 +2,7 @@
 
 ## Overview
 
-This implementation adds a comprehensive GitHub onboarding flow, user tracking system, and social follow functionality to GitHubCrazy.com.
+This implementation adds a comprehensive GitHub onboarding flow, user tracking system, and social follow functionality to Developer Ascend.
 
 ## Key Features Implemented
 
@@ -128,7 +128,7 @@ GITHUB_REDIRECT_URI=https://yourdomain.com/api/auth/github/callback
 
 # Optional: Override support repository/maintainer
 SUPPORT_REPO_OWNER=SIMARSINGHRAYAT
-SUPPORT_REPO_NAME=GitHubCrazy.com
+SUPPORT_REPO_NAME=Developer-Ascend
 SUPPORT_MAINTAINER=SIMARSINGHRAYAT
 ```
 

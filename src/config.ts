@@ -1,2 +1,2 @@
-export const SUPPORT_REPOSITORY = 'SIMARSINGHRAYAT/GitHubCrazy.com';
+export const SUPPORT_REPOSITORY = 'SIMARSINGHRAYAT/Developer-Ascend';
 export const MAINTAINER_PROFILE = 'SIMARSINGHRAYAT';

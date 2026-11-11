@@ -237,7 +237,7 @@ GITHUB_REDIRECT_URI=https://yourdomain.com/api/auth/github/callback
 ### Optional Variables (Override defaults)
 ```
 SUPPORT_REPO_OWNER=SIMARSINGHRAYAT (default)
-SUPPORT_REPO_NAME=GitHubCrazy.com (default)
+SUPPORT_REPO_NAME=Developer-Ascend (default)
 SUPPORT_MAINTAINER=SIMARSINGHRAYAT (default)
 ```
 

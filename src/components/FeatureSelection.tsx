@@ -10,7 +10,7 @@ export function FeatureSelection({ onSelectFeature }: FeatureSelectionProps) {
     <div className="max-w-4xl mx-auto text-center min-w-0">
       <h2 className="text-3xl font-black text-white mb-4 uppercase tracking-tighter">Choose a Feature</h2>
       <p className="text-sm text-gray-400 mb-10 max-w-xl mx-auto">
-        Select a tool from the GitHubCrazy ecosystem to enhance your GitHub profile.
+        Select a tool from the Developer Ascend ecosystem to enhance your GitHub profile.
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
