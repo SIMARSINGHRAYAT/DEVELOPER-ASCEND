@@ -19,10 +19,10 @@
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="License: MIT" /></a>
   <img src="https://img.shields.io/badge/Platform-Web%20%7C%20Linux%20%7C%20macOS%20%7C%20Windows-0078D4?style=for-the-badge" alt="Platform" />
-  <a href="https://github.com/SIMARSINGHRAYAT/GitHubCrazy.com/stargazers"><img src="https://img.shields.io/github/stars/SIMARSINGHRAYAT/GitHubCrazy.com?style=for-the-badge&logo=github&color=gold" alt="GitHub Stars" /></a>
-  <a href="https://github.com/SIMARSINGHRAYAT/GitHubCrazy.com/network/members"><img src="https://img.shields.io/github/forks/SIMARSINGHRAYAT/GitHubCrazy.com?style=for-the-badge&logo=github&color=orange" alt="GitHub Forks" /></a>
-  <a href="https://github.com/SIMARSINGHRAYAT/GitHubCrazy.com/discussions"><img src="https://img.shields.io/badge/Discussion-Join%20Community-purple?style=for-the-badge&logo=github" alt="GitHub Discussions" /></a>
-  <a href="https://github.com/SIMARSINGHRAYAT/GitHubCrazy.com/pulls"><img src="https://img.shields.io/badge/Contributions-Welcome-brightgreen?style=for-the-badge&logo=git" alt="Contributions Welcome" /></a>
+  <a href="https://github.com/SIMARSINGHRAYAT/DEVELOPER-ASCEND/stargazers"><img src="https://img.shields.io/github/stars/SIMARSINGHRAYAT/DEVELOPER-ASCEND?style=for-the-badge&logo=github&color=gold" alt="GitHub Stars" /></a>
+  <a href="https://github.com/SIMARSINGHRAYAT/DEVELOPER-ASCEND/network/members"><img src="https://img.shields.io/github/forks/SIMARSINGHRAYAT/DEVELOPER-ASCEND?style=for-the-badge&logo=github&color=orange" alt="GitHub Forks" /></a>
+  <a href="https://github.com/SIMARSINGHRAYAT/DEVELOPER-ASCEND/discussions"><img src="https://img.shields.io/badge/Discussion-Join%20Community-purple?style=for-the-badge&logo=github" alt="GitHub Discussions" /></a>
+  <a href="https://github.com/SIMARSINGHRAYAT/DEVELOPER-ASCEND/pulls"><img src="https://img.shields.io/badge/Contributions-Welcome-brightgreen?style=for-the-badge&logo=git" alt="Contributions Welcome" /></a>
 </p>
 
 ---
@@ -62,19 +62,19 @@
 If DEVELOPER ASCEND helped elevate your profile, share it with your fellow engineers:
 
 <p align="left">
-  <a href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fgithub.com%2FSIMARSINGHRAYAT%2FGitHubCrazy.com" target="_blank" rel="noopener noreferrer">
+  <a href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fgithub.com%2FSIMARSINGHRAYAT%2FDEVELOPER-ASCEND" target="_blank" rel="noopener noreferrer">
     <img src="https://img.shields.io/badge/LinkedIn-Share-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white" alt="Share on LinkedIn" />
   </a>
   &nbsp;
-  <a href="https://twitter.com/intent/tweet?text=Unlock%20official%20GitHub%20badges%20and%20grow%20your%20network%20with%20DEVELOPER%20ASCEND!%20%F0%9F%9A%80&url=https%3A%2F%2Fgithub.com%2FSIMARSINGHRAYAT%2FGitHubCrazy.com" target="_blank" rel="noopener noreferrer">
+  <a href="https://twitter.com/intent/tweet?text=Unlock%20official%20GitHub%20badges%20and%20grow%20your%20network%20with%20DEVELOPER%20ASCEND!%20%F0%9F%9A%80&url=https%3A%2F%2Fgithub.com%2FSIMARSINGHRAYAT%2FDEVELOPER-ASCEND" target="_blank" rel="noopener noreferrer">
     <img src="https://img.shields.io/badge/X%20(Twitter)-Tweet-000000?style=for-the-badge&logo=x&logoColor=white" alt="Share on X" />
   </a>
   &nbsp;
-  <a href="https://www.reddit.com/submit?url=https%3A%2F%2Fgithub.com%2FSIMARSINGHRAYAT%2FGitHubCrazy.com&title=DEVELOPER%20ASCEND%20-%20Get%20Badges%20on%20Your%20GitHub%20Profile!" target="_blank" rel="noopener noreferrer">
+  <a href="https://www.reddit.com/submit?url=https%3A%2F%2Fgithub.com%2FSIMARSINGHRAYAT%2FDEVELOPER-ASCEND&title=DEVELOPER%20ASCEND%20-%20Get%20Badges%20on%20Your%20GitHub%20Profile!" target="_blank" rel="noopener noreferrer">
     <img src="https://img.shields.io/badge/Reddit-Post-FF4500?style=for-the-badge&logo=reddit&logoColor=white" alt="Share on Reddit" />
   </a>
   &nbsp;
-  <a href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fgithub.com%2FSIMARSINGHRAYAT%2FGitHubCrazy.com" target="_blank" rel="noopener noreferrer">
+  <a href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fgithub.com%2FSIMARSINGHRAYAT%2FDEVELOPER-ASCEND" target="_blank" rel="noopener noreferrer">
     <img src="https://img.shields.io/badge/Facebook-Share-1877F2?style=for-the-badge&logo=facebook&logoColor=white" alt="Share on Facebook" />
   </a>
 </p>
@@ -94,8 +94,8 @@ Watch full video guides, badge tutorials, and open-source tips on YouTube:
 ## 💬 Community & Global Discussion
 
 Have ideas, questions, or feature suggestions?
-- Join the conversation on [GitHub Discussions](https://github.com/SIMARSINGHRAYAT/GitHubCrazy.com/discussions).
-- Report bugs or request new badge workflows through [GitHub Issues](https://github.com/SIMARSINGHRAYAT/GitHubCrazy.com/issues).
+- Join the conversation on [GitHub Discussions](https://github.com/SIMARSINGHRAYAT/DEVELOPER-ASCEND/discussions).
+- Report bugs or request new badge workflows through [GitHub Issues](https://github.com/SIMARSINGHRAYAT/DEVELOPER-ASCEND/issues).
 - Connect with other developers who are leveling up their profiles.
 
 ---

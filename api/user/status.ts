@@ -70,7 +70,7 @@ export default async function handler(
 
     // Check GitHub requirements
     const repoOwner = process.env.SUPPORT_REPO_OWNER || 'SIMARSINGHRAYAT';
-    const repoName = process.env.SUPPORT_REPO_NAME || 'Developer-Ascend';
+    const repoName = process.env.SUPPORT_REPO_NAME || 'DEVELOPER-ASCEND';
     const maintainer = process.env.SUPPORT_MAINTAINER || 'SIMARSINGHRAYAT';
 
     const { starred, followed } = await checkGitHubStatus(token, repoOwner, repoName, maintainer);
