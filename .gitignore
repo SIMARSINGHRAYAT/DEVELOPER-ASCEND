@@ -15,9 +15,12 @@ dist-ssr
 .env.*
 .vercel
 
-# Editor
+# Editor & IDE
 .vscode/*
 !.vscode/extensions.json
 .DS_Store
-node_modules
-.env*
+.agents
+.claude
+.cursor
+.devin
+.gitcom
