@@ -2,19 +2,15 @@
   <img src="assets/logo.png" alt="DEVELOPER ASCEND Logo" width="180" />
 </p>
 
-<h1 align="center">DEVELOPER ASCEND</h1>
-
 ---
+
+<h1 align="center">DEVELOPER ASCEND</h1>
 
 <p align="center">
   <em>An automated workspace to unlock official GitHub achievement badges, discover standout repositories, and grow within an authentic global developer network.</em>
 </p>
 
-<p align="center">
-  <a href="https://www.youtube.com/@SIMARSINGHRAYAT" target="_blank" rel="noopener noreferrer">
-    <img src="assets/thumbnail.png" alt="Get Badges on Your GitHub Profile! - YouTube Tutorial" width="850" />
-  </a>
-</p>
+---
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="License: MIT" /></a>
@@ -30,6 +26,12 @@
 ## 💡 What Is It?
 
 **DEVELOPER ASCEND** is a companion platform for GitHub creators and software engineers designed to supercharge your developer profile. It streamlines achievement unlocking, accelerates repository discovery, and fosters peer-to-peer networking through structured, policy-compliant workflows.
+
+<p align="center">
+  <a href="https://www.youtube.com/@Kilzsnippet" target="_blank" rel="noopener noreferrer">
+    <img src="assets/thumbnail.png" alt="Get Badges on Your GitHub Profile! - YouTube Tutorial" width="850" />
+  </a>
+</p>
 
 ---
 
@@ -85,7 +87,7 @@ If DEVELOPER ASCEND helped elevate your profile, share it with your fellow engin
 
 Watch full video guides, badge tutorials, and open-source tips on YouTube:
 
-[![YouTube Channel](https://img.shields.io/badge/YouTube-Watch%20Tutorials-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/@SIMARSINGHRAYAT)
+[![YouTube Channel](https://img.shields.io/badge/YouTube-@Kilzsnippet-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/@Kilzsnippet)
 
 > 📹 **Video Featured**: *“Get Badges on Your GitHub Profile!”* — Step-by-step walkthrough on unlocking all GitHub profile achievements.
 
