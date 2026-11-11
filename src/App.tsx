@@ -13,10 +13,10 @@ import {
 } from './utils/github';
 import { checkUserStatus } from './utils/api';
 import { cn } from './utils/cn';
-import quickdrawBadge from '../logo/starstruck-default--light-a594e2a027e0.png';
-import yoloBadge from '../logo/yolo-default-be0bbff04951.png';
-import pullSharkBadge from '../logo/pull-shark-default-498c279a747d.png';
-import pairExtraordinaireBadge from '../logo/pair-extraordinaire-default-579438a20e01.png';
+import quickdrawBadge from './assets/badges/starstruck-default--light-a594e2a027e0.png';
+import yoloBadge from './assets/badges/yolo-default-be0bbff04951.png';
+import pullSharkBadge from './assets/badges/pull-shark-default-498c279a747d.png';
+import pairExtraordinaireBadge from './assets/badges/pair-extraordinaire-default-579438a20e01.png';
 import {
   Github, Key, ChevronDown, Play,
   CheckCircle2, XCircle, Loader2, AlertTriangle, Lock, Globe,
