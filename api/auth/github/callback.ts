@@ -43,9 +43,6 @@ function getRedirectUri(req: any) {
   const protocol = req.headers['x-forwarded-proto'] || 'https';
   return `${protocol}://${host}/api/auth/github/callback`;
 }
-  const protocol = req.headers['x-forwarded-proto'] || 'https';
-  return `${protocol}://${host}/api/auth/github/callback`;
-}
 
 function getOrigin(req: any) {
   const host = req.headers['x-forwarded-host'] || req.headers.host;
