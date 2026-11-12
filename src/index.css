@@ -3,28 +3,26 @@
 
 :root {
   --background-hsl: 0 0% 0%;
-  --card-background: 0 0% 5%;
+  --card-background: 0 0% 0%;
   --accent-purple: 154 100% 50%;
   --accent-blue: 187 100% 56%;
   --accent-red: 4 100% 64%;
   --accent-green: 72 100% 58%;
-  --text-primary: 56 100% 93%;
-  --text-secondary: 185 20% 70%;
-  --glass-border: 187 100% 56% / 0.35;
-  --glass-bg: 0 0% 0% / 0.45;
+  --text-primary: 56 100% 95%;
+  --text-secondary: 185 20% 75%;
 }
 
 body {
   margin: 0;
   overflow-x: hidden;
   font-family: 'VT323', monospace;
-  font-size: 20px;
+  font-size: 22px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: #000000;
   background-image: 
-    linear-gradient(rgba(24, 240, 196, .03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(24, 240, 196, .03) 1px, transparent 1px);
+    linear-gradient(rgba(24, 240, 196, .04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(24, 240, 196, .04) 1px, transparent 1px);
   background-size: 32px 32px;
   color: hsl(var(--text-primary));
 }
@@ -35,7 +33,7 @@ body::before {
   inset: 0;
   pointer-events: none;
   z-index: 1;
-  background: repeating-linear-gradient(0deg, transparent 0 3px, rgba(255, 255, 255, .012) 3px 4px);
+  background: repeating-linear-gradient(0deg, transparent 0 3px, rgba(255, 255, 255, .01) 3px 4px);
 }
 
 h1,
@@ -66,17 +64,19 @@ textarea {
 input:focus,
 select:focus,
 textarea:focus {
-  box-shadow: 0 0 10px rgba(157, 255, 56, .25);
+  box-shadow: 0 0 12px rgba(157, 255, 56, .35);
 }
 
-/* Black transparent glass HUD windows */
+/* Mirror clear glass HUD windows - background is clearly visible without blur */
 .glass-card {
-  background: rgba(0, 0, 0, 0.45) !important;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  background: rgba(0, 0, 0, 0.15) !important;
+  backdrop-filter: blur(0px) !important;
+  -webkit-backdrop-filter: blur(0px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
   border-radius: 0 !important;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, .03);
+  box-shadow: 
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.2),
+    0 8px 32px 0 rgba(0, 0, 0, 0.45);
 }
 
 .premium-gradient-purple,
@@ -99,7 +99,7 @@ textarea:focus {
 .btn-hover-effect:hover,
 button:hover {
   transform: translate(-2px, -2px);
-  filter: brightness(1.12);
+  filter: brightness(1.15);
 }
 
 .btn-hover-effect:active,
@@ -148,7 +148,7 @@ button:active {
 
 .welcome-quote {
   font-family: 'VT323', monospace !important;
-  font-size: clamp(1.35rem, 2.6vw, 2rem);
+  font-size: clamp(1.5rem, 3vw, 2.2rem);
 }
 
 .floating-githubs {
@@ -163,9 +163,9 @@ button:active {
   position: absolute;
   top: 0;
   color: #35ff9a;
-  opacity: .14;
-  filter: drop-shadow(0 0 14px rgba(53, 255, 154, .7));
-  animation: drop-github 3.8s linear infinite;
+  opacity: .32;
+  filter: drop-shadow(0 0 16px rgba(53, 255, 154, .85));
+  animation: drop-github 4s linear infinite;
 }
 
 @keyframes drop-github {
@@ -173,11 +173,11 @@ button:active {
     transform: translateY(-18vh);
     opacity: 0;
   }
-  12% {
-    opacity: .14;
+  10% {
+    opacity: .32;
   }
-  88% {
-    opacity: .14;
+  90% {
+    opacity: .32;
   }
   100% {
     transform: translateY(118vh);
@@ -188,8 +188,8 @@ button:active {
 .repo-menu {
   min-height: 280px;
   max-height: min(70vh, 600px);
-  background: rgba(0, 0, 0, 0.92) !important;
-  backdrop-filter: blur(20px);
+  background: rgba(0, 0, 0, 0.88) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
 }
 
 .repo-list {
@@ -202,15 +202,15 @@ button:active {
 }
 
 .badge-reference {
-  width: min(100%, 240px);
-  height: 130px;
+  width: min(100%, 260px);
+  height: 140px;
   object-fit: contain;
   object-position: center;
   opacity: 1;
-  background: rgba(0, 0, 0, .45);
-  border: 1px solid rgba(255, 255, 255, .15);
+  background: rgba(0, 0, 0, .2);
+  border: 1px solid rgba(255, 255, 255, .25);
   box-shadow: 0 4px 20px rgba(0, 0, 0, .5);
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
 }
 
 @media (max-width: 640px) {
@@ -222,7 +222,7 @@ button:active {
     right: -0.5rem;
   }
   .floating-github {
-    opacity: .08;
+    opacity: .22;
   }
 }
 

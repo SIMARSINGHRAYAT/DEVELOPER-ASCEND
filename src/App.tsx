@@ -33,13 +33,13 @@ import { IncreaseFollowers } from './components/IncreaseFollowers';
 // ─── Constants ───────────────────────────────────────────────────────
 const MAX_ITEMS = 300;
 const FLOATING_GITHUB_LOGOS = [
-  { left: '4%', size: 'clamp(28px, 5vw, 72px)', delay: '-0.5s', duration: '4s' },
-  { left: '18%', size: 'clamp(38px, 6vw, 90px)', delay: '-2s', duration: '5.5s' },
-  { left: '32%', size: 'clamp(24px, 4vw, 58px)', delay: '-3.5s', duration: '4.5s' },
-  { left: '48%', size: 'clamp(44px, 7vw, 100px)', delay: '-1s', duration: '6.5s' },
-  { left: '64%', size: 'clamp(28px, 5vw, 70px)', delay: '-2.5s', duration: '5s' },
-  { left: '80%', size: 'clamp(36px, 5vw, 76px)', delay: '-3s', duration: '6s' },
-  { left: '93%', size: 'clamp(22px, 4vw, 54px)', delay: '-1.5s', duration: '4.5s' },
+  { left: '4%', size: 'clamp(32px, 5.5vw, 80px)', delay: '-0.5s', duration: '4s' },
+  { left: '18%', size: 'clamp(42px, 6.5vw, 96px)', delay: '-2s', duration: '5.5s' },
+  { left: '32%', size: 'clamp(28px, 4.5vw, 68px)', delay: '-3.5s', duration: '4.5s' },
+  { left: '48%', size: 'clamp(48px, 7.5vw, 110px)', delay: '-1s', duration: '6.5s' },
+  { left: '64%', size: 'clamp(32px, 5.5vw, 80px)', delay: '-2.5s', duration: '5s' },
+  { left: '80%', size: 'clamp(40px, 6vw, 88px)', delay: '-3s', duration: '6s' },
+  { left: '93%', size: 'clamp(26px, 4.5vw, 64px)', delay: '-1.5s', duration: '4.5s' },
 ];
 
 const badgeAssets = {
@@ -160,7 +160,6 @@ export default function App() {
       setUser(githubUser); setUserEmail(email); setToken(token);
       fetchAllRepos(token).then(setRepos).catch(console.error);
 
-      // Check if user has already completed support requirements
       const localRequirementsDone = localStorage.getItem('dev_ascend_requirements_done') === 'true';
       if (localRequirementsDone) {
         setAppStep('features');
@@ -490,7 +489,7 @@ export default function App() {
   // ── RENDER ─────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-black text-gray-100 selection:bg-purple-500/30 font-sans app-shell">
-      {/* Background Falling GitHub Logos - Visible across whole application */}
+      {/* Background Falling GitHub Logos - Visible through all mirror blocks */}
       <div className="floating-githubs" aria-hidden="true">
         {FLOATING_GITHUB_LOGOS.map((logo, index) => (
           <Github
@@ -512,48 +511,53 @@ export default function App() {
         appStep === 'welcome' ? 'h-screen flex items-center justify-center overflow-hidden' : 'py-8 sm:py-12'
       )}>
         {(error || oauthError) && (
-          <div className="mb-8 glass-card !bg-red-500/10 border-red-500/30 p-4 flex items-start gap-4 animate-in slide-in-from-top-4 duration-300">
+          <div className="mb-8 glass-card border border-red-500/40 p-4 flex items-start gap-4 animate-in slide-in-from-top-4 duration-300">
             <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
-            <div className="flex-1 text-xs text-red-200 font-medium whitespace-pre-wrap">{error || oauthError}</div>
-            <button onClick={() => { setError(''); setOauthError(''); }} className="text-red-400 hover:text-white"><X className="w-4 h-4" /></button>
+            <div className="flex-1 text-sm text-red-200 font-medium whitespace-pre-wrap">{error || oauthError}</div>
+            <button onClick={() => { setError(''); setOauthError(''); }} className="text-red-400 hover:text-white cursor-pointer"><X className="w-4 h-4" /></button>
           </div>
         )}
 
-        {/* WELCOME SCREEN (No Scrollbar) */}
+        {/* WELCOME SCREEN (Centered, Mirror Get Started Button) */}
         {appStep === 'welcome' && !showAuth && (
           <div className="max-w-4xl w-full mx-auto text-center flex flex-col items-center justify-center min-w-0">
             <h2 className="welcome-title font-black leading-tight text-green-400 uppercase text-center mx-auto">DEVELOPER ASCEND</h2>
-            <p className="welcome-quote italic text-gray-300 font-medium leading-relaxed max-w-2xl mx-auto mt-8">“Programs must be written for people to read, and only incidentally for machines to execute.”</p>
-            <button onClick={() => setShowAuth(true)} className="mt-10 px-12 py-5 rounded-2xl bg-white text-gray-950 font-black text-xs uppercase tracking-[0.2em] shadow-2xl shadow-white/10 hover:bg-green-400 transition-all">Get Started</button>
+            <p className="welcome-quote italic text-gray-200 font-medium leading-relaxed max-w-2xl mx-auto mt-8">“Programs must be written for people to read, and only incidentally for machines to execute.”</p>
+            <button
+              onClick={() => setShowAuth(true)}
+              className="mt-10 px-14 py-6 rounded-2xl glass-card bg-black/15 hover:bg-white/10 text-white font-black text-sm uppercase tracking-[0.25em] border-2 border-green-400/80 hover:border-green-400 shadow-[0_0_30px_rgba(53,255,154,0.35),inset_0_1px_2px_rgba(255,255,255,0.4)] transition-all btn-hover-effect cursor-pointer"
+            >
+              Get Started
+            </button>
           </div>
         )}
 
-        {/* SIGN IN VIA GITHUB (Centered, Zero Scroll, Transparent Glass Card) */}
+        {/* SIGN IN VIA GITHUB (Centered, Zero Scroll, Mirror Block) */}
         {appStep === 'welcome' && showAuth && (
           <div className="max-w-md w-full mx-auto animate-in zoom-in-95 duration-300">
-            <div className="glass-card p-8 sm:p-10 relative overflow-hidden bg-black/40 backdrop-blur-xl border border-white/10">
+            <div className="glass-card p-8 sm:p-10 relative overflow-hidden border border-white/25">
               <div className="text-center mb-8">
-                <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-5 border border-white/10">
-                  <Key className="w-8 h-8 text-white" />
+                <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-5 border border-white/20">
+                  <Key className="w-8 h-8 text-green-400" />
                 </div>
-                <h3 className="text-xl font-black text-white tracking-widest uppercase">Welcome Aboard</h3>
+                <h3 className="text-2xl font-black text-white tracking-widest uppercase">Welcome Aboard</h3>
               </div>
               <div className="space-y-6">
-                <p className="text-xs text-gray-400 leading-relaxed text-center">
+                <p className="text-base text-gray-300 leading-relaxed text-center">
                   Sign in securely with GitHub OAuth. Developer Ascend never asks you to paste or manage personal access tokens.
                 </p>
                 <button
                   onClick={handleConnect}
                   disabled={loading}
-                  className="w-full py-5 rounded-2xl bg-white text-gray-950 font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-3 shadow-xl hover:bg-green-400 disabled:opacity-50"
+                  className="w-full py-5 rounded-2xl glass-card bg-black/20 hover:bg-white/10 text-white font-black text-xs uppercase tracking-widest border border-green-400/60 hover:border-green-400 transition-all flex items-center justify-center gap-3 shadow-[0_0_20px_rgba(53,255,154,0.2)] disabled:opacity-50 cursor-pointer"
                 >
-                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Github className="w-5 h-5" />}
+                  {loading ? <Loader2 className="w-5 h-5 animate-spin text-green-400" /> : <Github className="w-5 h-5 text-green-400" />}
                   {loading ? 'CONNECTING...' : 'SIGN IN VIA GITHUB'}
-                  <ExternalLink className="w-4 h-4" />
+                  <ExternalLink className="w-4 h-4 text-green-400" />
                 </button>
                 <button
                   onClick={() => setShowAuth(false)}
-                  className="w-full py-2 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-white transition-colors text-center"
+                  className="w-full py-2 text-xs font-black uppercase tracking-widest text-gray-400 hover:text-white transition-colors text-center cursor-pointer"
                 >
                   Back to welcome
                 </button>
@@ -562,23 +566,25 @@ export default function App() {
           </div>
         )}
 
-        {/* SUPPORT PROJECT (Stars All 6 Repositories) */}
+        {/* SUPPORT PROJECT (Stars Repositories) */}
         {appStep === 'support' && token && (
           <SupportProject token={token} onComplete={() => setAppStep('features')} />
         )}
 
-        {/* FEATURE SELECTION (Dashboard) */}
+        {/* FEATURE SELECTION (Dashboard - Centered in Middle) */}
         {appStep === 'features' && (
-          <FeatureSelection onSelectFeature={(feature) => {
-            if (feature === 'badges') {
-              setAppStep('badges');
-              setStep(1);
-            } else if (feature === 'stars') {
-              setAppStep('stars');
-            } else if (feature === 'followers') {
-              setAppStep('followers');
-            }
-          }} />
+          <div className="min-h-[78vh] flex flex-col justify-center items-center">
+            <FeatureSelection onSelectFeature={(feature) => {
+              if (feature === 'badges') {
+                setAppStep('badges');
+                setStep(1);
+              } else if (feature === 'stars') {
+                setAppStep('stars');
+              } else if (feature === 'followers') {
+                setAppStep('followers');
+              }
+            }} />
+          </div>
         )}
 
         {/* INCREASE STARS */}
@@ -588,7 +594,7 @@ export default function App() {
               onClick={() => setAppStep('features')}
               aria-label="Back to features"
               title="Back to features"
-              className="mb-8 p-3 bg-black/40 border border-white/10 text-gray-400 hover:text-white transition-all flex items-center gap-2 text-xs font-bold"
+              className="mb-8 p-3 glass-card border border-white/25 text-gray-300 hover:text-white transition-all flex items-center gap-2 text-sm font-bold cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4" /> Back to Dashboard
             </button>
@@ -603,7 +609,7 @@ export default function App() {
               onClick={() => setAppStep('features')}
               aria-label="Back to features"
               title="Back to features"
-              className="mb-8 p-3 bg-black/40 border border-white/10 text-gray-400 hover:text-white transition-all flex items-center gap-2 text-xs font-bold"
+              className="mb-8 p-3 glass-card border border-white/25 text-gray-300 hover:text-white transition-all flex items-center gap-2 text-sm font-bold cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4" /> Back to Dashboard
             </button>
@@ -611,49 +617,49 @@ export default function App() {
           </div>
         )}
 
-        {/* BADGES STEP 1: REPOSITORY MANAGEMENT */}
+        {/* BADGES STEP 1: REPOSITORY MANAGEMENT (Mirror Card) */}
         {appStep === 'badges' && step === 1 && (
           <div className="max-w-3xl mx-auto staggered-list text-center">
-            <div className="flex justify-between items-center gap-3 mb-5">
+            <div className="flex justify-between items-center gap-3 mb-6">
               <button
                 onClick={() => setAppStep('features')}
                 aria-label="Back to features"
                 title="Back to features"
-                className="p-3 bg-black/40 border border-white/10 text-gray-400 hover:text-white transition-all flex items-center gap-2 text-xs font-bold"
+                className="p-3 glass-card border border-white/25 text-gray-300 hover:text-white transition-all flex items-center gap-2 text-sm font-bold cursor-pointer"
               >
                 <ArrowLeft className="w-4 h-4" /> Back to Dashboard
               </button>
-              <button onClick={disconnect} className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-red-400 transition-all">Log out</button>
+              <button onClick={disconnect} className="px-4 py-2 rounded-xl glass-card border border-white/20 text-xs font-black uppercase tracking-widest text-gray-400 hover:text-red-400 transition-all cursor-pointer">Log out</button>
             </div>
 
-            <div className="glass-card p-6 sm:p-10 lg:p-12 relative overflow-visible bg-black/40 backdrop-blur-xl border border-white/10">
+            <div className="glass-card p-6 sm:p-10 lg:p-12 relative overflow-visible border border-white/25">
               <div className="flex items-center gap-5 mb-10 text-left">
-                <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 shrink-0">
-                  <Globe className="w-7 h-7 text-green-400" />
+                <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center border border-white/20 shrink-0">
+                  <Globe className="w-8 h-8 text-green-400" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-black text-white">SELECT REPOSITORY</h2>
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Choose an existing repository or create a new public one</p>
+                  <h2 className="text-2xl sm:text-3xl font-black text-white">SELECT REPOSITORY</h2>
+                  <p className="text-xs font-black text-gray-400 uppercase tracking-widest mt-1">Choose an existing repository or create a new public one</p>
                 </div>
               </div>
 
               {/* Browse Repositories Dropdown */}
               <div className="relative mb-8 text-left" ref={dropdownRef}>
-                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 block">
+                <label className="text-xs font-black uppercase tracking-widest text-gray-300 mb-2 block">
                   Select Existing Repository
                 </label>
                 <div
                   onClick={() => setRepoDropdownOpen(!repoDropdownOpen)}
-                  className="w-full bg-black/60 border border-white/10 rounded-2xl px-6 py-5 text-sm cursor-pointer flex items-center justify-between hover:border-white/25 transition-all font-bold"
+                  className="w-full glass-card border border-white/25 rounded-2xl px-6 py-5 text-base cursor-pointer flex items-center justify-between hover:border-white/40 transition-all font-bold"
                 >
-                  <span className={cn('min-w-0 break-all', selectedRepo ? 'text-white' : 'text-gray-500')}>
+                  <span className={cn('min-w-0 break-all', selectedRepo ? 'text-white' : 'text-gray-400')}>
                     {selectedRepo ? selectedRepo.full_name : 'Browse available repositories...'}
                   </span>
                   <ChevronDown className={cn('w-5 h-5 text-gray-400 transition-transform', repoDropdownOpen && 'rotate-180')} />
                 </div>
 
                 {repoDropdownOpen && (
-                  <div className="repo-menu absolute top-full left-0 right-0 mt-2 glass-card !bg-black/95 border border-white/15 shadow-2xl z-50 overflow-hidden animate-in fade-in duration-200">
+                  <div className="repo-menu absolute top-full left-0 right-0 mt-2 glass-card shadow-2xl z-50 overflow-hidden animate-in fade-in duration-200">
                     <div className="p-3 border-b border-white/10 bg-white/5">
                       <input
                         type="text"
@@ -661,12 +667,12 @@ export default function App() {
                         value={repoSearch}
                         onChange={e => setRepoSearch(e.target.value)}
                         placeholder="Search your repositories..."
-                        className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none placeholder:text-gray-600"
+                        className="w-full bg-black/60 border border-white/20 rounded-xl px-4 py-3 text-base text-white focus:outline-none placeholder:text-gray-500"
                       />
                     </div>
                     <div className="repo-list max-h-[min(55vh,500px)] overflow-y-auto overscroll-contain">
                       {filteredRepos.length === 0 && (
-                        <div className="px-6 py-8 text-center text-xs font-bold text-gray-600">No repositories found</div>
+                        <div className="px-6 py-8 text-center text-sm font-bold text-gray-500">No repositories found</div>
                       )}
                       {filteredRepos.map(r => (
                         <div
@@ -675,12 +681,12 @@ export default function App() {
                           className="px-6 py-4 hover:bg-white/10 cursor-pointer flex items-center justify-between border-b border-white/5 last:border-0"
                         >
                           <div className="flex items-center gap-3">
-                            <img src={r.owner.avatar_url} alt="" className="w-5 h-5 rounded-md" />
-                            <span className="text-xs font-bold text-gray-200">{r.name}</span>
+                            <img src={r.owner.avatar_url} alt="" className="w-6 h-6 rounded-md" />
+                            <span className="text-sm font-bold text-gray-200">{r.name}</span>
                           </div>
                           <div className="flex items-center gap-3">
-                            {r.private && <Lock className="w-3 h-3 text-amber-500" />}
-                            <span className="text-[10px] font-black text-gray-500 font-mono">{r.stargazers_count} ★</span>
+                            {r.private && <Lock className="w-4 h-4 text-amber-500" />}
+                            <span className="text-xs font-black text-gray-400 font-mono">{r.stargazers_count} ★</span>
                           </div>
                         </div>
                       ))}
@@ -690,8 +696,8 @@ export default function App() {
               </div>
 
               {/* Create New Repository Box (With README.md option) */}
-              <div className="mb-8 p-5 bg-black/50 border border-white/10 text-left">
-                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">
+              <div className="mb-8 p-6 glass-card border border-white/20 text-left">
+                <p className="text-xs font-black uppercase tracking-widest text-gray-300 mb-3">
                   Or Create a New Public Repository
                 </p>
                 <div className="flex flex-col sm:flex-row items-center gap-3 mb-3">
@@ -700,18 +706,18 @@ export default function App() {
                     value={newRepoName}
                     onChange={e => setNewRepoName(e.target.value)}
                     placeholder="e.g. badges-playground"
-                    className="w-full sm:flex-1 bg-black/60 border border-white/10 px-4 py-3 text-xs text-white focus:border-green-400 outline-none"
+                    className="w-full sm:flex-1 bg-black/40 border border-white/25 px-4 py-3 text-sm text-white focus:border-green-400 outline-none"
                   />
                   <button
                     onClick={handleCreateRepo}
                     disabled={creatingRepo || !newRepoName.trim()}
-                    className="w-full sm:w-auto px-6 py-3 bg-white/10 border border-white/15 text-[10px] font-black uppercase tracking-widest text-white hover:bg-white/20 transition-all flex items-center justify-center min-w-[120px] disabled:opacity-40"
+                    className="w-full sm:w-auto px-6 py-3 glass-card border border-white/25 text-xs font-black uppercase tracking-widest text-white hover:border-green-400/70 hover:bg-white/10 transition-all flex items-center justify-center min-w-[130px] disabled:opacity-40 cursor-pointer"
                   >
-                    {creatingRepo ? <Loader2 className="w-4 h-4 animate-spin" /> : 'CREATE REPO'}
+                    {creatingRepo ? <Loader2 className="w-4 h-4 animate-spin text-green-400" /> : 'CREATE REPO'}
                   </button>
                 </div>
                 {/* Ask whether to initialize with README */}
-                <div className="flex items-center gap-2 mt-2">
+                <div className="flex items-center gap-2 mt-3">
                   <input
                     type="checkbox"
                     id="initReadmeCheckbox"
@@ -719,7 +725,7 @@ export default function App() {
                     onChange={e => setInitReadme(e.target.checked)}
                     className="w-4 h-4 accent-green-400 cursor-pointer"
                   />
-                  <label htmlFor="initReadmeCheckbox" className="text-xs text-gray-300 cursor-pointer select-none">
+                  <label htmlFor="initReadmeCheckbox" className="text-sm text-gray-300 cursor-pointer select-none">
                     Initialize repository with <code className="text-green-400 font-mono">README.md</code> (Recommended)
                   </label>
                 </div>
@@ -727,24 +733,24 @@ export default function App() {
 
               {selectedRepo && (
                 <div className="mb-8 grid grid-cols-2 gap-4 text-left animate-in fade-in duration-300">
-                  <div className="p-4 bg-black/50 border border-white/10">
-                    <div className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-1">Visibility</div>
-                    <div className="text-xs font-bold text-gray-200 flex items-center gap-2">
-                      {selectedRepo.private ? <ShieldAlert className="w-3.5 h-3.5 text-amber-500" /> : <Globe className="w-3.5 h-3.5 text-green-400" />}
+                  <div className="p-4 glass-card border border-white/20">
+                    <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Visibility</div>
+                    <div className="text-sm font-bold text-gray-200 flex items-center gap-2">
+                      {selectedRepo.private ? <ShieldAlert className="w-4 h-4 text-amber-500" /> : <Globe className="w-4 h-4 text-green-400" />}
                       {selectedRepo.private ? 'PRIVATE' : 'PUBLIC'}
                     </div>
                   </div>
-                  <div className="p-4 bg-black/50 border border-white/10">
-                    <div className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-1">Branch</div>
-                    <div className="text-xs font-bold text-gray-200 flex items-center gap-2">
-                      <GitBranch className="w-3.5 h-3.5 text-blue-400" /> {selectedRepo.default_branch}
+                  <div className="p-4 glass-card border border-white/20">
+                    <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Branch</div>
+                    <div className="text-sm font-bold text-gray-200 flex items-center gap-2">
+                      <GitBranch className="w-4 h-4 text-blue-400" /> {selectedRepo.default_branch}
                     </div>
                   </div>
                 </div>
               )}
 
               {permissionError && (
-                <div className="mb-8 border border-red-500/20 bg-red-500/10 px-4 py-3 text-xs font-medium text-red-300">
+                <div className="mb-8 border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-300">
                   {permissionError}
                 </div>
               )}
@@ -752,7 +758,7 @@ export default function App() {
               <div className="grid grid-cols-2 gap-4">
                 <button
                   onClick={() => setAppStep('features')}
-                  className="py-4 bg-white/5 border border-white/10 text-gray-400 font-black text-[10px] uppercase tracking-widest hover:text-white transition-all"
+                  className="py-4 glass-card border border-white/25 text-gray-300 font-black text-xs uppercase tracking-widest hover:text-white transition-all cursor-pointer"
                 >
                   BACK
                 </button>
@@ -760,9 +766,9 @@ export default function App() {
                   onClick={() => setStep(2)}
                   disabled={!selectedRepo || permissionStatus !== 'ok'}
                   className={cn(
-                    'py-4 font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2',
+                    'py-4 font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 cursor-pointer',
                     !selectedRepo || permissionStatus !== 'ok'
-                      ? 'bg-white/5 border border-white/5 text-gray-700 cursor-not-allowed'
+                      ? 'bg-white/5 border border-white/5 text-gray-600 cursor-not-allowed'
                       : 'premium-gradient-green text-gray-950 shadow-xl'
                   )}
                 >
@@ -773,7 +779,7 @@ export default function App() {
           </div>
         )}
 
-        {/* BADGES STEP 2: BADGE SELECTION & STEP-BY-STEP WORKFLOW */}
+        {/* BADGES STEP 2: WORKSPACE (Mirror Cards, High Readability) */}
         {appStep === 'badges' && step === 2 && selectedRepo && (
           <div className="max-w-5xl mx-auto space-y-8 text-center animate-in fade-in duration-300">
             {/* Header with Navigation */}
@@ -782,14 +788,14 @@ export default function App() {
                 onClick={() => setStep(1)}
                 aria-label="Back to repository selection"
                 title="Back to repository"
-                className="p-3 bg-black/40 border border-white/10 text-gray-400 hover:text-white transition-all flex items-center gap-2 text-xs font-bold"
+                className="p-3 glass-card border border-white/25 text-gray-300 hover:text-white transition-all flex items-center gap-2 text-sm font-bold cursor-pointer"
               >
                 <ArrowLeft className="w-4 h-4" /> Change Repository
               </button>
-              <span className="text-xs font-mono text-gray-400">
+              <span className="text-sm font-mono text-gray-300">
                 Target: <strong className="text-white">{selectedRepo.full_name}</strong>
               </span>
-              <button onClick={disconnect} className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-red-400 transition-all">Log out</button>
+              <button onClick={disconnect} className="px-4 py-2 rounded-xl glass-card border border-white/20 text-xs font-black uppercase tracking-widest text-gray-400 hover:text-red-400 transition-all cursor-pointer">Log out</button>
             </div>
 
             {/* Badge Mode Tabs */}
@@ -804,13 +810,13 @@ export default function App() {
                   key={mode.id}
                   onClick={() => handleSwitchMode(mode.id as any)}
                   className={cn(
-                    "p-4 text-[10px] font-black uppercase tracking-wider transition-all border flex items-center justify-center gap-2 shadow-lg",
+                    "p-4 text-xs font-black uppercase tracking-wider transition-all border flex items-center justify-center gap-2 shadow-lg cursor-pointer",
                     appMode === mode.id
                       ? "bg-white text-gray-950 border-white shadow-xl scale-[1.02]"
-                      : "bg-black/50 border-white/10 text-gray-400 hover:text-white hover:border-white/20"
+                      : "glass-card border-white/20 text-gray-300 hover:text-white hover:border-white/40"
                   )}
                 >
-                  <mode.icon className="w-4 h-4" /> {mode.label}
+                  <mode.icon className="w-5 h-5" /> {mode.label}
                 </button>
               ))}
             </div>
@@ -818,22 +824,22 @@ export default function App() {
             {/* Main Badge Workspace Card */}
             <div className="grid lg:grid-cols-2 gap-8 items-start">
               {/* Left Column: Distinct Badge Graphic & Timing Notice */}
-              <div className="glass-card p-8 flex flex-col items-center justify-center text-center bg-black/40 backdrop-blur-xl border border-white/10">
+              <div className="glass-card p-8 sm:p-10 flex flex-col items-center justify-center text-center border border-white/25">
                 <img
                   src={badgeAssets[appMode]}
                   alt={`${modeLabels[appMode]} badge`}
                   className="badge-reference"
                 />
-                <h3 className="text-2xl font-black text-white mb-2 uppercase tracking-tighter">
+                <h3 className="text-3xl font-black text-white mb-3 uppercase tracking-tight">
                   {modeLabels[appMode]}
                 </h3>
-                <p className="text-xs text-gray-400 font-medium leading-relaxed max-w-sm mb-6">
+                <p className="text-sm sm:text-base text-gray-300 font-medium leading-relaxed max-w-sm mb-6">
                   {modeDescriptions[appMode]}
                 </p>
 
                 {/* Achievement Calculation Notice */}
-                <div className="w-full p-4 bg-purple-500/10 border border-purple-500/20 text-purple-300 text-xs flex items-center gap-3 text-left">
-                  <Clock className="w-5 h-5 shrink-0 text-purple-400" />
+                <div className="w-full p-4 glass-card border border-purple-500/40 text-purple-200 text-sm flex items-center gap-3 text-left">
+                  <Clock className="w-6 h-6 shrink-0 text-purple-400" />
                   <div>
                     <strong className="block font-bold">Calculation Processing Notice:</strong>
                     <span>GitHub achievement calculations take approximately 2 to 5 minutes to reflect on your public profile.</span>
@@ -842,21 +848,21 @@ export default function App() {
               </div>
 
               {/* Right Column: Numbered Step-by-Step Workflow */}
-              <div className="glass-card p-8 space-y-6 flex flex-col h-full items-start bg-black/40 backdrop-blur-xl border border-white/10 text-left">
+              <div className="glass-card p-8 sm:p-10 space-y-6 flex flex-col h-full items-start border border-white/25 text-left">
                 {/* Step Indicators Header */}
                 <div className="w-full flex items-center justify-between border-b border-white/10 pb-4">
-                  <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-green-400">
-                    <span className="w-6 h-6 rounded-full bg-green-500/20 border border-green-500/40 flex items-center justify-center text-[10px]">1</span>
+                  <div className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-green-400">
+                    <span className="w-7 h-7 rounded-full bg-green-500/20 border border-green-500/40 flex items-center justify-center text-xs">1</span>
                     Configure
                   </div>
-                  <ChevronRight className="w-4 h-4 text-gray-600" />
-                  <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-gray-300">
-                    <span className="w-6 h-6 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-[10px]">2</span>
+                  <ChevronRight className="w-4 h-4 text-gray-500" />
+                  <div className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-gray-300">
+                    <span className="w-7 h-7 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-xs">2</span>
                     Queue: {queueCount}
                   </div>
-                  <ChevronRight className="w-4 h-4 text-gray-600" />
-                  <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-purple-400">
-                    <span className="w-6 h-6 rounded-full bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-[10px]">3</span>
+                  <ChevronRight className="w-4 h-4 text-gray-500" />
+                  <div className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-purple-400">
+                    <span className="w-7 h-7 rounded-full bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-xs">3</span>
                     Execute
                   </div>
                 </div>
@@ -865,12 +871,12 @@ export default function App() {
                   {/* QUICKDRAW MODE */}
                   {appMode === 'quickdraw_badge' && (
                     <div className="space-y-5 w-full">
-                      <div className="p-4 bg-purple-500/10 border border-purple-500/20 text-xs text-purple-200 leading-relaxed font-bold">
+                      <div className="p-4 glass-card border border-purple-500/30 text-sm text-purple-200 leading-relaxed font-bold">
                         Step 1: Click "Initialize Node" to prepare an automated issue creation and swift closure trigger.
                       </div>
                       <button
                         onClick={generateQuickdrawBadge}
-                        className="w-full py-4 premium-gradient-purple text-white font-black text-xs uppercase tracking-[0.2em] shadow-xl"
+                        className="w-full py-4 premium-gradient-purple text-white font-black text-xs uppercase tracking-[0.2em] shadow-xl cursor-pointer"
                       >
                         INITIALIZE NODE
                       </button>
@@ -880,36 +886,36 @@ export default function App() {
                   {/* YOLO BADGE MODE */}
                   {appMode === 'yolo_badge' && (
                     <div className="space-y-4 w-full">
-                      <div className="p-4 bg-orange-500/10 border border-orange-500/20 text-xs text-orange-200 leading-relaxed font-bold">
+                      <div className="p-4 glass-card border border-orange-500/30 text-sm text-orange-200 leading-relaxed font-bold">
                         Step 1: Select a collaborator and their verified Git email for the commit trailer.
                       </div>
                       <div className="space-y-3">
                         <div>
-                          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Reviewer Collaborator</label>
+                          <label className="text-xs font-black text-gray-300 uppercase tracking-widest block mb-1">Reviewer Collaborator</label>
                           <select
                             value={coAuthors[0].name}
                             onChange={e => updateCoAuthor(0, 'name', e.target.value)}
                             disabled={collaboratorsLoading || collaborators.length === 0}
-                            className="w-full bg-black/60 border border-white/10 px-4 py-3 text-xs text-white"
+                            className="w-full glass-card border border-white/20 px-4 py-3 text-sm text-white"
                           >
                             <option value="">{collaboratorsLoading ? 'Loading collaborators...' : collaborators.length ? 'Select collaborator' : 'No collaborators found'}</option>
                             {collaborators.map(c => <option key={c.id} value={c.login}>{c.login}</option>)}
                           </select>
                         </div>
                         <div>
-                          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Git Email Address</label>
+                          <label className="text-xs font-black text-gray-300 uppercase tracking-widest block mb-1">Git Email Address</label>
                           <input
                             value={coAuthors[0].email}
                             onChange={e => updateCoAuthor(0, 'email', e.target.value)}
                             placeholder="collaborator-github-email@example.com"
-                            className="w-full bg-black/60 border border-white/10 px-4 py-3 text-xs text-white"
+                            className="w-full glass-card border border-white/20 px-4 py-3 text-sm text-white"
                           />
                         </div>
                       </div>
                       <button
                         onClick={generateYOLOBadge}
                         disabled={!coAuthors[0].name || !isValidEmail(coAuthors[0].email)}
-                        className="w-full py-4 bg-gradient-to-r from-red-600 to-orange-600 text-white font-black text-xs uppercase tracking-[0.2em] shadow-xl disabled:opacity-30 disabled:cursor-not-allowed"
+                        className="w-full py-4 bg-gradient-to-r from-red-600 to-orange-600 text-white font-black text-xs uppercase tracking-[0.2em] shadow-xl disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                       >
                         BUILD YOLO FLOW
                       </button>
@@ -919,16 +925,16 @@ export default function App() {
                   {/* PULL SHARK MODE */}
                   {appMode === 'pull_shark' && (
                     <div className="space-y-4 w-full">
-                      <div className="p-4 bg-green-500/10 border border-green-500/20 text-xs text-green-200 leading-relaxed font-bold">
+                      <div className="p-4 glass-card border border-green-500/30 text-sm text-green-200 leading-relaxed font-bold">
                         Step 1: Prepares 2 dedicated repositories and authentic pull requests to fulfill Pull Shark requirements.
                       </div>
                       <div>
-                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Optional Reviewer</label>
+                        <label className="text-xs font-black text-gray-300 uppercase tracking-widest block mb-1">Optional Reviewer</label>
                         <select
                           value={pullSharkReviewer}
                           onChange={e => setPullSharkReviewer(e.target.value)}
                           disabled={collaboratorsLoading || collaborators.length === 0}
-                          className="w-full bg-black/60 border border-white/10 px-4 py-3 text-xs text-white"
+                          className="w-full glass-card border border-white/20 px-4 py-3 text-sm text-white"
                         >
                           <option value="">None (Self-managed pull request)</option>
                           {collaborators.map(c => <option key={c.id} value={c.login}>{c.login}</option>)}
@@ -936,13 +942,13 @@ export default function App() {
                       </div>
                       <button
                         onClick={() => setAutoMerge(!autoMerge)}
-                        className="w-full py-3 text-xs font-black uppercase tracking-widest border border-white/15 bg-white/5 text-gray-300"
+                        className="w-full py-3 text-xs font-black uppercase tracking-widest glass-card border border-white/20 text-gray-300 cursor-pointer"
                       >
                         AUTO-MERGE: {autoMerge ? 'ENABLED' : 'MANUAL'}
                       </button>
                       <button
                         onClick={generatePRs}
-                        className="w-full py-4 premium-gradient-green text-gray-950 font-black text-xs uppercase tracking-widest"
+                        className="w-full py-4 premium-gradient-green text-gray-950 font-black text-xs uppercase tracking-widest cursor-pointer"
                       >
                         GENERATE PULL REQUEST QUEUE
                       </button>
@@ -952,7 +958,7 @@ export default function App() {
                   {/* PAIR EXTRAORDINAIRE MODE */}
                   {appMode === 'pair_extraordinaire' && (
                     <div className="space-y-4 w-full">
-                      <div className="p-4 bg-amber-500/10 border border-amber-500/20 text-xs text-amber-200 leading-relaxed font-bold">
+                      <div className="p-4 glass-card border border-amber-500/30 text-sm text-amber-200 leading-relaxed font-bold">
                         Step 1: Add recognized collaborators with their verified GitHub email for co-authored git commits.
                       </div>
                       {coAuthors.map((ca, i) => (
@@ -961,7 +967,7 @@ export default function App() {
                             value={ca.name}
                             onChange={e => updateCoAuthor(i, 'name', e.target.value)}
                             disabled={collaboratorsLoading || collaborators.length === 0}
-                            className="flex-1 bg-black/60 border border-white/10 px-3 py-2 text-xs text-white"
+                            className="flex-1 glass-card border border-white/20 px-3 py-2 text-sm text-white"
                           >
                             <option value="">Select collaborator</option>
                             {collaborators.map(c => <option key={c.id} value={c.login}>{c.login}</option>)}
@@ -970,20 +976,20 @@ export default function App() {
                             value={ca.email}
                             onChange={e => updateCoAuthor(i, 'email', e.target.value)}
                             placeholder="collaborator-email@example.com"
-                            className="flex-1 bg-black/60 border border-white/10 px-3 py-2 text-xs text-white"
+                            className="flex-1 glass-card border border-white/20 px-3 py-2 text-sm text-white"
                           />
-                          <button onClick={() => removeCoAuthor(i)} className="px-2 text-red-400 hover:text-white">
-                            <X className="w-4 h-4" />
+                          <button onClick={() => removeCoAuthor(i)} className="px-2 text-red-400 hover:text-white cursor-pointer">
+                            <X className="w-5 h-5" />
                           </button>
                         </div>
                       ))}
-                      <button onClick={addCoAuthor} className="w-full py-2 text-[10px] font-black uppercase text-gray-400 hover:text-white border border-dashed border-white/15">
+                      <button onClick={addCoAuthor} className="w-full py-2 text-xs font-black uppercase text-gray-300 hover:text-white glass-card border border-dashed border-white/25 cursor-pointer">
                         + Add Collaborator
                       </button>
                       <button
                         onClick={generatePairTemplates}
                         disabled={coAuthors.length === 0 || coAuthors.some(ca => !ca.name || !isValidEmail(ca.email))}
-                        className="w-full py-4 premium-gradient-purple text-white font-black text-xs uppercase tracking-[0.2em] disabled:opacity-30 disabled:cursor-not-allowed"
+                        className="w-full py-4 premium-gradient-purple text-white font-black text-xs uppercase tracking-[0.2em] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                       >
                         INITIALIZE PAIR SESSION
                       </button>
@@ -993,13 +999,13 @@ export default function App() {
 
                 {/* Step 3: Execution Bar */}
                 <div className="w-full pt-6 mt-auto border-t border-white/10 flex items-center justify-between">
-                  <div className="text-xs font-mono text-gray-400">
+                  <div className="text-sm font-mono text-gray-300">
                     Queue: <strong className="text-white">{queueCount}</strong> items ready
                   </div>
                   <button
                     onClick={handleStart}
                     disabled={queueCount === 0}
-                    className="px-10 py-4 premium-gradient-green text-gray-950 font-black text-xs uppercase tracking-widest shadow-2xl disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2"
+                    className="px-10 py-4 premium-gradient-green text-gray-950 font-black text-xs uppercase tracking-widest shadow-2xl disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
                   >
                     <Play className="w-4 h-4 fill-current" /> EXECUTE WORKFLOW
                   </button>
@@ -1012,35 +1018,35 @@ export default function App() {
         {/* BADGES STEP 3 & 4: EXECUTION PROGRESS & COMPLETION */}
         {appStep === 'badges' && (step === 3 || step === 4) && (
           <div className="max-w-4xl mx-auto space-y-8 text-center animate-in fade-in duration-300">
-            <div className="glass-card p-8 sm:p-12 relative overflow-hidden bg-black/40 backdrop-blur-xl border border-white/10">
+            <div className="glass-card p-8 sm:p-12 relative overflow-hidden border border-white/25">
               <div className="flex items-center justify-between mb-10">
                 <div className="flex items-center gap-5 text-left">
-                  <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10">
-                    {step === 4 ? <CheckCircle2 className="w-8 h-8 text-green-400" /> : <Loader2 className="w-8 h-8 text-green-400 animate-spin" />}
+                  <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center border border-white/20">
+                    {step === 4 ? <CheckCircle2 className="w-9 h-9 text-green-400" /> : <Loader2 className="w-9 h-9 text-green-400 animate-spin" />}
                   </div>
                   <div>
-                    <h2 className="text-2xl font-black text-white tracking-tight">
+                    <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
                       {step === 4 ? completionTitle : 'EXECUTING WORKFLOW'}
                     </h2>
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">
+                    <p className="text-xs font-black text-gray-400 uppercase tracking-widest mt-1">
                       {step === 4 ? `${successCount} completed, ${errorCount} failed` : 'Automated achievement triggers in progress'}
                     </p>
                   </div>
                 </div>
                 {step === 3 && (
                   <div className="flex gap-2">
-                    <button onClick={togglePause} className="p-3 bg-white/5 border border-white/10 text-gray-300 hover:text-white">
-                      {isPaused ? <Play className="w-4 h-4 text-green-400" /> : <Pause className="w-4 h-4 text-amber-400" />}
+                    <button onClick={togglePause} className="p-3 glass-card border border-white/20 text-gray-300 hover:text-white cursor-pointer">
+                      {isPaused ? <Play className="w-5 h-5 text-green-400" /> : <Pause className="w-5 h-5 text-amber-400" />}
                     </button>
-                    <button onClick={cancelCreation} className="p-3 bg-white/5 border border-white/10 text-red-400 hover:text-white">
-                      <X className="w-4 h-4" />
+                    <button onClick={cancelCreation} className="p-3 glass-card border border-white/20 text-red-400 hover:text-white cursor-pointer">
+                      <X className="w-5 h-5" />
                     </button>
                   </div>
                 )}
               </div>
 
               {/* Progress Bar */}
-              <div className="h-3 bg-black/60 border border-white/10 p-0.5 mb-8 overflow-hidden relative">
+              <div className="h-4 bg-black/60 border border-white/15 p-0.5 mb-8 overflow-hidden relative">
                 <div
                   className="h-full premium-gradient-green transition-all duration-500 shadow-[0_0_12px_rgba(34,197,94,0.4)]"
                   style={{ width: `${progressPct}%` }}
@@ -1050,22 +1056,22 @@ export default function App() {
               {/* Items List */}
               <div className="space-y-3 text-left">
                 {createdItems.map((item, i) => (
-                  <div key={item.id} className="p-4 bg-black/50 border border-white/10 flex items-center justify-between">
+                  <div key={item.id} className="p-4 glass-card border border-white/20 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <span className="text-[10px] font-mono font-bold text-gray-500">#{i + 1}</span>
-                      <span className="text-xs font-bold text-gray-200">{item.title}</span>
+                      <span className="text-xs font-mono font-bold text-gray-400">#{i + 1}</span>
+                      <span className="text-sm font-bold text-gray-200">{item.title}</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <span className={cn(
-                        "text-[10px] font-black uppercase tracking-wider font-mono",
+                        "text-xs font-black uppercase tracking-wider font-mono",
                         item.status === 'merged' ? 'text-green-400' : item.status === 'error' ? 'text-red-400' : 'text-gray-400'
                       )}>
                         {item.substatus || item.status}
                       </span>
-                      {item.error && <span className="max-w-xs text-right text-[10px] text-red-300/80 truncate">{item.error}</span>}
+                      {item.error && <span className="max-w-xs text-right text-xs text-red-300/80 truncate">{item.error}</span>}
                       {item.url && (
-                        <a href={item.url} target="_blank" rel="noreferrer" className="p-1.5 bg-white/5 hover:text-white text-gray-400">
-                          <ExternalLink className="w-3.5 h-3.5" />
+                        <a href={item.url} target="_blank" rel="noreferrer" className="p-2 glass-card hover:text-white text-gray-400">
+                          <ExternalLink className="w-4 h-4" />
                         </a>
                       )}
                     </div>
@@ -1077,13 +1083,13 @@ export default function App() {
                 <div className="mt-10 pt-6 border-t border-white/10 flex flex-col sm:flex-row gap-4 justify-center">
                   <button
                     onClick={reset}
-                    className="py-4 px-8 bg-white text-gray-950 font-black text-xs uppercase tracking-widest shadow-xl hover:bg-green-400 transition-all"
+                    className="py-4 px-8 bg-white text-gray-950 font-black text-xs uppercase tracking-widest shadow-xl hover:bg-green-400 transition-all cursor-pointer"
                   >
                     START ANOTHER BATCH
                   </button>
                   <button
                     onClick={() => setAppStep('features')}
-                    className="py-4 px-8 bg-black/60 border border-white/15 text-white font-black text-xs uppercase tracking-widest hover:bg-white/5 transition-all"
+                    className="py-4 px-8 glass-card border border-white/25 text-white font-black text-xs uppercase tracking-widest hover:bg-white/10 transition-all cursor-pointer"
                   >
                     BACK TO DASHBOARD
                   </button>
@@ -1094,10 +1100,10 @@ export default function App() {
         )}
       </main>
 
-      {/* Footer ONLY visible when outside welcome/sign-in screen */}
+      {/* Footer ONLY visible when outside welcome screen */}
       {appStep !== 'welcome' && (
         <footer className="py-12 text-center opacity-30">
-          <p className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-700">&copy; {new Date().getFullYear()} Developer Ascend</p>
+          <p className="text-xs font-black uppercase tracking-[0.4em] text-gray-500">&copy; {new Date().getFullYear()} Developer Ascend</p>
         </footer>
       )}
     </div>
