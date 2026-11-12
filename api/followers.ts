@@ -5,9 +5,11 @@ import type { ApiRequest, ApiResponse } from './types.js';
 const MAX_FOLLOWS_PER_DAY = 10;
 
 function today() {
-  const date = new Date();
-  date.setHours(0, 0, 0, 0);
-  return date;
+  // 24-hour reset boundary calculated using Indian Standard Time (IST, UTC+5:30)
+  const nowUtc = Date.now();
+  const istOffsetMs = 5.5 * 60 * 60 * 1000;
+  const istDate = new Date(nowUtc + istOffsetMs);
+  return new Date(Date.UTC(istDate.getUTCFullYear(), istDate.getUTCMonth(), istDate.getUTCDate()));
 }
 
 async function getUser(token: string) {
@@ -23,19 +25,56 @@ async function payload(currentUserId: string) {
   const interactions = await prisma.discoveryProfileInteraction.findMany({ where: { actorId: currentUserId } });
   const existingFollows = await prisma.follows.findMany({ where: { followerId: currentUserId }, select: { followingId: true } });
   const unavailableProfileIds = [...new Set([...interactions.map(item => item.targetId), ...existingFollows.map(item => item.followingId)])];
-  const profiles = await prisma.user.findMany({ where: { AND: [{ id: { not: currentUserId } }, { id: { notIn: unavailableProfileIds } }] }, include: { followers: { select: { followerId: true } } }, orderBy: { createdAt: 'desc' }, take: 25 });
-  const followerCounts = await prisma.discoveryProfileInteraction.groupBy({ by: ['targetId'], where: { action: 'FOLLOW' }, _count: { actorId: true }, orderBy: { _count: { actorId: 'desc' } }, take: 10 });
-  const followingCounts = await prisma.discoveryProfileInteraction.groupBy({ by: ['actorId'], where: { action: 'FOLLOW' }, _count: { targetId: true }, orderBy: { _count: { targetId: 'desc' } }, take: 10 });
-  const leaderboardIds = [...new Set([...followerCounts.map(item => item.followingId), ...followingCounts.map(item => item.followerId)])];
+  
+  // Only real registered users from our database are returned
+  const profiles = await prisma.user.findMany({
+    where: { AND: [{ id: { not: currentUserId } }, { id: { notIn: unavailableProfileIds } }] },
+    include: { followers: { select: { followerId: true } } },
+    orderBy: { createdAt: 'desc' },
+    take: 25,
+  });
+
+  const followerCounts = await prisma.discoveryProfileInteraction.groupBy({
+    by: ['targetId'],
+    where: { action: 'FOLLOW' },
+    _count: { actorId: true },
+    orderBy: { _count: { actorId: 'desc' } },
+    take: 10,
+  });
+
+  const followingCounts = await prisma.discoveryProfileInteraction.groupBy({
+    by: ['actorId'],
+    where: { action: 'FOLLOW' },
+    _count: { targetId: true },
+    orderBy: { _count: { targetId: 'desc' } },
+    take: 10,
+  });
+
+  const leaderboardIds = [...new Set([...followerCounts.map(item => item.targetId), ...followingCounts.map(item => item.actorId)])];
   const users = await prisma.user.findMany({ where: { id: { in: leaderboardIds } } });
   const userMap = new Map(users.map(user => [user.id, user]));
+
   return {
-    profiles: profiles.map(profile => ({ id: profile.id, username: profile.githubUsername, name: profile.githubName, avatarUrl: profile.githubAvatar, bio: profile.githubBio, profileUrl: `https://github.com/${profile.githubUsername}`, followersCount: profile.followers.length })),
+    profiles: profiles.map(profile => ({
+      id: profile.id,
+      username: profile.githubUsername,
+      name: profile.githubName,
+      avatarUrl: profile.githubAvatar,
+      bio: profile.githubBio,
+      profileUrl: `https://github.com/${profile.githubUsername}`,
+      followersCount: profile.followers.length,
+    })),
     followsUsed: usage?.followsUsed || 0,
     followsRemaining: Math.max(0, MAX_FOLLOWS_PER_DAY - (usage?.followsUsed || 0)),
     maxFollowsPerDay: MAX_FOLLOWS_PER_DAY,
-    receivedLeaderboard: followerCounts.map(item => ({ username: userMap.get(item.targetId)?.githubUsername || 'Unknown', followersReceived: item._count.actorId })),
-    activityLeaderboard: followingCounts.map(item => ({ username: userMap.get(item.actorId)?.githubUsername || 'Unknown', profilesFollowed: item._count.targetId })),
+    receivedLeaderboard: followerCounts.map(item => ({
+      username: userMap.get(item.targetId)?.githubUsername || 'Unknown',
+      followersReceived: item._count.actorId,
+    })),
+    activityLeaderboard: followingCounts.map(item => ({
+      username: userMap.get(item.actorId)?.githubUsername || 'Unknown',
+      profilesFollowed: item._count.targetId,
+    })),
   };
 }
 
@@ -59,7 +98,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       catch (error: any) { if (error?.code === 'P2002') throw new Error('You have already interacted with this profile.'); throw error; }
       if (action !== 'follow') return { followsUsed: (await transaction.dailyDiscoveryUsage.findUnique({ where: { userId_date: { userId: currentUser.id, date: today() } } }))?.followsUsed || 0 };
       const usage = await transaction.dailyDiscoveryUsage.findUnique({ where: { userId_date: { userId: currentUser.id, date: today() } } });
-      if ((usage?.followsUsed || 0) >= MAX_FOLLOWS_PER_DAY) throw new Error("You have reached today's limit of 10 profile follows.");
+      if ((usage?.followsUsed || 0) >= MAX_FOLLOWS_PER_DAY) throw new Error(`You have reached today's limit of ${MAX_FOLLOWS_PER_DAY} profile follows.`);
       await transaction.follows.create({ data: { followerId: currentUser.id, followingId: targetId } });
       await transaction.dailyDiscoveryUsage.upsert({ where: { userId_date: { userId: currentUser.id, date: today() } }, update: { followsUsed: { increment: 1 } }, create: { userId: currentUser.id, date: today(), followsUsed: 1 } });
       return { followsUsed: (usage?.followsUsed || 0) + 1 };

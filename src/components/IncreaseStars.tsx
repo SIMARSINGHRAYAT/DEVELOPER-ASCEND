@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { GitHubRepo } from '../types';
-import { ArrowRight, ExternalLink, Loader2, Pencil, Plus, Star, Trash2, Trophy, X } from 'lucide-react';
+import { ArrowRight, ExternalLink, Loader2, Pencil, Plus, Star, Trash2, Trophy, X, ShieldAlert } from 'lucide-react';
 
 interface Submission {
   id: string;
@@ -25,19 +25,27 @@ const wordCount = (text: string) => text.trim() ? text.trim().split(/\s+/).lengt
 export function IncreaseStars({ token, user, repos }: IncreaseStarsProps) {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [feed, setFeed] = useState<Submission[]>([]);
-  const [selected, setSelected] = useState<GitHubRepo[]>([]);
-  const [selectedDescriptions, setSelectedDescriptions] = useState<Record<string, string>>({});
-  const [editingSelectedId, setEditingSelectedId] = useState<number | null>(null);
-  const [editing, setEditing] = useState<Submission | null>(null);
-  const [description, setDescription] = useState('');
   const [starsUsed, setStarsUsed] = useState(0);
-  const [starsRemaining, setStarsRemaining] = useState(50);
+  const [starsRemaining, setStarsRemaining] = useState(10);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
-  const availableRepos = useMemo(() => repos.filter(repo => !repo.private && !submissions.some(item => item.githubRepoId === String(repo.id)) && !selected.some(item => item.id === repo.id)), [repos, submissions, selected]);
+  // Add Repository Flow States
+  const [addingRepo, setAddingRepo] = useState<GitHubRepo | null>(null);
+  const [newDescription, setNewDescription] = useState('');
+  const [editing, setEditing] = useState<Submission | null>(null);
+  const [editDescription, setEditDescription] = useState('');
+
+  const MAX_ACTIVE = 2;
+  const MAX_STARS_DAILY = 10;
+
+  const availableRepos = useMemo(() => 
+    repos.filter(repo => !repo.private && !submissions.some(item => item.githubRepoId === String(repo.id))),
+    [repos, submissions]
+  );
+
   const current = feed[0];
 
   const load = async () => {
@@ -45,93 +53,428 @@ export function IncreaseStars({ token, user, repos }: IncreaseStarsProps) {
       const response = await fetch('/api/stars', { headers: { Authorization: `Bearer ${token}` } });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Failed to load community feed');
-      setSubmissions(data.submissions || []); setFeed(data.feed || []); setStarsUsed(data.starsUsed || 0); setStarsRemaining(data.starsRemaining ?? 50); setLeaderboard(data.leaderboard || []);
-    } catch (err: any) { setError(err.message || 'Failed to load community feed'); } finally { setLoading(false); }
+      setSubmissions(data.submissions || []);
+      setFeed(data.feed || []);
+      setStarsUsed(data.starsUsed || 0);
+      setStarsRemaining(data.starsRemaining ?? MAX_STARS_DAILY);
+      setLeaderboard(data.leaderboard || []);
+    } catch (err: any) {
+      setError(err.message || 'Failed to load community feed');
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { load(); }, [token]);
 
-  const submitSelected = async () => {
-    if (!selected.length) return;
-    setBusy(true); setError('');
+  // Handle repository selection from dropdown -> immediately prompt for description
+  const handleSelectForAdd = (repoId: string) => {
+    setError('');
+    if (!repoId) return;
+    if (submissions.length >= MAX_ACTIVE) {
+      setError(`You have reached the maximum limit of ${MAX_ACTIVE} active repositories. Please delete one first.`);
+      return;
+    }
+    const found = repos.find(r => String(r.id) === repoId);
+    if (found) {
+      setAddingRepo(found);
+      setNewDescription(found.description || '');
+    }
+  };
+
+  // Submit the selected repo once description is confirmed
+  const confirmAddRepo = async () => {
+    if (!addingRepo) return;
+    if (wordCount(newDescription) > 50) {
+      setError('Description must be 50 words or fewer.');
+      return;
+    }
+    setBusy(true);
+    setError('');
     try {
-      const response = await fetch('/api/stars', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ action: 'submit', repositories: selected.map(repo => ({ ...repo, discoveryDescription: selectedDescriptions[String(repo.id)] || '' })) }) });
+      const response = await fetch('/api/stars', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          action: 'submit',
+          repositories: [{
+            ...addingRepo,
+            discoveryDescription: newDescription.trim() || addingRepo.description || 'Public repository'
+          }]
+        })
+      });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'We could not submit these repositories.');
-      setSelected([]); setSelectedDescriptions({}); await load();
-    } catch (err: any) { setError(err.message); } finally { setBusy(false); }
+      if (!response.ok) throw new Error(data.error || 'Could not submit repository.');
+      setAddingRepo(null);
+      setNewDescription('');
+      await load();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
   };
 
   const saveDescription = async () => {
-    if (!editing || wordCount(description) > 50) return;
-    setBusy(true); setError('');
+    if (!editing || wordCount(editDescription) > 50) return;
+    setBusy(true);
+    setError('');
     try {
-      const response = await fetch('/api/stars', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ action: 'update', submissionId: editing.id, description }) });
+      const response = await fetch('/api/stars', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ action: 'update', submissionId: editing.id, description: editDescription })
+      });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Could not update description.');
-      setEditing(null); await load();
-    } catch (err: any) { setError(err.message); } finally { setBusy(false); }
+      setEditing(null);
+      await load();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
   };
 
   const deleteSubmission = async (submissionId: string) => {
-    setBusy(true); setError('');
+    setBusy(true);
+    setError('');
     try {
-      const response = await fetch('/api/stars', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ action: 'delete', submissionId }) });
+      const response = await fetch('/api/stars', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ action: 'delete', submissionId })
+      });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Could not delete submission.');
       await load();
-    } catch (err: any) { setError(err.message); } finally { setBusy(false); }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
   };
 
   const interact = async (interaction: 'STAR' | 'SKIP') => {
     if (!current || (interaction === 'STAR' && starsRemaining <= 0)) return;
-    setBusy(true); setError('');
+    setBusy(true);
+    setError('');
     try {
-      const response = await fetch('/api/stars', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ action: 'interact', submissionId: current.id, interaction }) });
+      const response = await fetch('/api/stars', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ action: 'interact', submissionId: current.id, interaction })
+      });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Could not process this repository.');
       setFeed(items => items.slice(1));
-      if (interaction === 'STAR') { setStarsUsed(data.starsUsed); setStarsRemaining(data.starsRemaining); }
-    } catch (err: any) { setError(err.message); } finally { setBusy(false); }
+      if (interaction === 'STAR') {
+        setStarsUsed(data.starsUsed);
+        setStarsRemaining(data.starsRemaining);
+      }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
   };
 
-  return <div className="max-w-6xl mx-auto min-w-0 space-y-8">
-    <div className="text-center">
-      <h2 className="text-3xl font-black text-white uppercase tracking-tighter">Increase Stars</h2>
-      <p className="text-base text-gray-400 mt-3">Submit repositories and discover work from other developers.</p>
-    </div>
-    {error && <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-300 text-sm text-center">{error}</div>}
+  return (
+    <div className="max-w-6xl mx-auto min-w-0 space-y-8">
+      <div className="text-center">
+        <h2 className="text-3xl font-black text-white uppercase tracking-tighter">Increase Stars</h2>
+        <p className="text-base text-gray-400 mt-2">
+          Star community projects to increase your own priority in the discovery feed.
+        </p>
+      </div>
 
-    <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] gap-8 items-start">
-      <section className="glass-card p-6 sm:p-8">
-        <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-5">
-          <h3 className="text-base font-black text-white uppercase tracking-widest">Selected Repositories</h3>
-          <span className="text-sm text-gray-400">{submissions.length} live</span>
+      {error && (
+        <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-300 text-sm text-center font-medium backdrop-blur-xl">
+          {error}
         </div>
-        <div className="space-y-4">
-          {submissions.map(item => <div key={item.id} className="p-4 bg-white/5 border border-white/10 flex items-start gap-3">
-            <Star className="w-5 h-5 text-green-400 mt-1 shrink-0" />
-            <div className="min-w-0 flex-1"><a href={item.repositoryUrl} target="_blank" rel="noreferrer" className="text-base font-bold text-white hover:text-green-400 break-words">{item.repositoryOwner} / {item.repositoryName}</a><p className="text-sm text-gray-400 mt-2 break-words">{item.description || 'No description provided.'}</p><p className="text-xs text-gray-500 mt-2">Discovery stars: {item.discoveryStars} · GitHub stars: {item.githubStars}</p></div>
-            <button onClick={() => { setEditing(item); setDescription(item.description || ''); }} aria-label={`Edit ${item.repositoryName}`} title="Edit" className="p-2 text-gray-400 hover:text-white"><Pencil className="w-4 h-4" /></button>
-            <button onClick={() => deleteSubmission(item.id)} disabled={busy} aria-label={`Delete ${item.repositoryName}`} title="Delete" className="p-2 text-gray-400 hover:text-red-400"><Trash2 className="w-4 h-4" /></button>
-          </div>)}
-          {selected.map(repo => { const repoDescription = selectedDescriptions[String(repo.id)] || ''; const isEditing = editingSelectedId === repo.id; return <div key={repo.id} className="p-4 border border-green-400/30 bg-green-400/5"><div className="flex items-center gap-3"><Star className="w-5 h-5 text-green-400" /><span className="text-sm font-bold text-white flex-1">{repo.full_name}</span><button onClick={() => setEditingSelectedId(isEditing ? null : repo.id)} aria-label={`Edit ${repo.name}`} title="Edit"><Pencil className="w-4 h-4 text-gray-400 hover:text-white" /></button><button onClick={() => { setSelected(items => items.filter(item => item.id !== repo.id)); setSelectedDescriptions(items => { const next = { ...items }; delete next[String(repo.id)]; return next; }); }} aria-label={`Remove ${repo.name}`} title="Delete"><Trash2 className="w-4 h-4 text-gray-400 hover:text-red-400" /></button></div>{isEditing ? <><textarea value={repoDescription} onChange={event => setSelectedDescriptions(items => ({ ...items, [String(repo.id)]: event.target.value }))} rows={3} placeholder="Add a short description" className="w-full mt-4 bg-black/40 border border-white/10 p-3 text-sm text-white" /><p className={`text-xs mt-2 ${wordCount(repoDescription) > 50 ? 'text-red-400' : 'text-gray-400'}`}>{wordCount(repoDescription)} / 50 words</p></> : <p className="text-sm text-gray-400 mt-3">{repoDescription || 'No description provided. Select Edit to add one.'}</p>}</div>; })}
+      )}
+
+      <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] gap-8 items-start">
+        {/* Left Card: My Active Repositories (Max 2) */}
+        <section className="glass-card p-6 sm:p-8 bg-black/40 backdrop-blur-xl border border-white/10">
+          <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-5">
+            <div>
+              <h3 className="text-base font-black text-white uppercase tracking-widest">My Repositories</h3>
+              <p className="text-xs text-gray-400 mt-1">Maximum 2 active submissions</p>
+            </div>
+            <span className={`text-xs font-black uppercase tracking-wider px-3 py-1 rounded-full border ${submissions.length >= MAX_ACTIVE ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' : 'bg-green-500/10 border-green-500/30 text-green-400'}`}>
+              {submissions.length} / {MAX_ACTIVE}
+            </span>
+          </div>
+
+          <div className="space-y-4">
+            {submissions.length === 0 && (
+              <div className="p-6 text-center border border-dashed border-white/10 text-gray-500 text-sm">
+                No active repositories submitted yet. Add one below to appear on the discovery feed.
+              </div>
+            )}
+            {submissions.map(item => (
+              <div key={item.id} className="p-4 bg-black/50 border border-white/10 backdrop-blur-md flex items-start gap-3">
+                <Star className="w-5 h-5 text-yellow-400 mt-1 shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <a href={item.repositoryUrl} target="_blank" rel="noreferrer" className="text-base font-bold text-white hover:text-green-400 break-words flex items-center gap-1.5">
+                    {item.repositoryOwner} / {item.repositoryName}
+                    <ExternalLink className="w-3.5 h-3.5 text-gray-500" />
+                  </a>
+                  <p className="text-xs text-gray-400 mt-2 break-words leading-relaxed">
+                    {item.description || 'No description provided.'}
+                  </p>
+                  <p className="text-[11px] text-gray-500 mt-2 font-mono">
+                    Discovery Stars: <span className="text-green-400 font-bold">{item.discoveryStars}</span> · GitHub Stars: {item.githubStars}
+                  </p>
+                </div>
+                <button
+                  onClick={() => { setEditing(item); setEditDescription(item.description || ''); }}
+                  aria-label={`Edit ${item.repositoryName}`}
+                  title="Edit description"
+                  className="p-2 text-gray-400 hover:text-white transition-colors"
+                >
+                  <Pencil className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => deleteSubmission(item.id)}
+                  disabled={busy}
+                  aria-label={`Delete ${item.repositoryName}`}
+                  title="Delete submission"
+                  className="p-2 text-gray-400 hover:text-red-400 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {/* Add Repository Section */}
+          <div className="mt-6 pt-5 border-t border-white/10 space-y-3">
+            <label className="text-xs font-black text-gray-400 uppercase tracking-widest block">
+              Add Repository (Max {MAX_ACTIVE})
+            </label>
+            {submissions.length >= MAX_ACTIVE ? (
+              <div className="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs flex items-center gap-2">
+                <ShieldAlert className="w-4 h-4 shrink-0" />
+                <span>Limit reached (2/2). Delete an existing repository to add a different one.</span>
+              </div>
+            ) : (
+              <select
+                value=""
+                onChange={e => handleSelectForAdd(e.target.value)}
+                disabled={busy}
+                className="w-full bg-black/60 border border-white/10 px-4 py-3 text-sm text-white focus:border-green-400/50 outline-none transition-all cursor-pointer"
+              >
+                <option value="">+ Select Repository to Add...</option>
+                {availableRepos.map(repo => (
+                  <option key={repo.id} value={repo.id}>
+                    {repo.full_name} ({repo.stargazers_count} ★)
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+        </section>
+
+        {/* Right Card: Community Discovery Feed */}
+        <section className="glass-card p-6 sm:p-8 bg-black/40 backdrop-blur-xl border border-white/10">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-5 mb-6">
+            <div>
+              <h3 className="text-xl font-black text-white uppercase tracking-widest">Community Feed</h3>
+              <p className="text-xs text-gray-400 mt-1">Active contributors are prioritized first</p>
+            </div>
+            <div className="text-right">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Daily Limit (24h IST)</p>
+              <p className="text-xl font-black text-green-400 mt-0.5">{starsUsed} / {MAX_STARS_DAILY}</p>
+              <p className="text-[10px] text-gray-500">Remaining: {starsRemaining}</p>
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="py-20 flex justify-center">
+              <Loader2 className="w-10 h-10 text-green-400 animate-spin" />
+            </div>
+          ) : !current ? (
+            <div className="py-16 text-center">
+              <Star className="w-12 h-12 text-gray-600 mx-auto mb-4 opacity-50" />
+              <p className="text-base font-bold text-gray-300">No repositories currently queued for discovery.</p>
+              <p className="text-xs text-gray-500 mt-2">Check back shortly as developers add new projects.</p>
+            </div>
+          ) : (
+            <div className="border border-green-500/20 bg-black/50 p-6 sm:p-8 backdrop-blur-md">
+              <div className="flex items-start gap-4">
+                <img
+                  src={current.repositoryAvatar || user.avatar_url}
+                  alt=""
+                  className="w-14 h-14 border border-white/10 shrink-0 rounded-lg"
+                />
+                <div className="min-w-0 flex-1">
+                  <a
+                    href={current.repositoryUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-lg sm:text-xl font-black text-white hover:text-green-400 break-words flex items-center gap-2"
+                  >
+                    {current.repositoryOwner} / {current.repositoryName}
+                    <ExternalLink className="w-4 h-4 text-gray-400" />
+                  </a>
+                  <p className="text-xs text-gray-300 mt-3 leading-relaxed">
+                    {current.description || 'No description provided.'}
+                  </p>
+                  <div className="flex items-center gap-4 text-xs text-gray-500 mt-4">
+                    <span>GitHub Stars: <strong className="text-white">{current.githubStars}</strong></span>
+                    <span>Discovery Stars: <strong className="text-green-400">{current.discoveryStars}</strong></span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mt-8">
+                <button
+                  onClick={() => interact('SKIP')}
+                  disabled={busy}
+                  className="py-4 border border-white/15 bg-white/5 hover:bg-white/10 text-gray-300 font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all"
+                >
+                  <X className="w-4 h-4" /> Skip
+                </button>
+                <button
+                  onClick={() => interact('STAR')}
+                  disabled={busy || starsRemaining <= 0}
+                  className="py-4 premium-gradient-green text-gray-950 font-black text-xs uppercase tracking-widest disabled:opacity-40 flex items-center justify-center gap-2 transition-all shadow-lg"
+                >
+                  <Star className="w-4 h-4 fill-current" /> Star ({starsRemaining} left) <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+
+              {starsRemaining <= 0 && (
+                <p className="text-xs text-red-400 mt-4 text-center font-bold">
+                  Daily limit of {MAX_STARS_DAILY} stars reached. Resets in 24 hours (IST).
+                </p>
+              )}
+            </div>
+          )}
+        </section>
+      </div>
+
+      {/* Repository Star Leaderboard: Top 10 */}
+      <section className="glass-card p-6 sm:p-8 bg-black/40 backdrop-blur-xl border border-white/10">
+        <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-6">
+          <h3 className="text-lg font-black text-white uppercase tracking-widest flex items-center gap-3">
+            <Trophy className="w-5 h-5 text-yellow-400" /> Top 10 Contributors
+          </h3>
+          <span className="text-xs text-gray-400">Ranked by discovery stars & activity</span>
         </div>
-        <div className="mt-6 space-y-4">
-          <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Add another repository</label>
-          <select value="" onChange={event => { const repo = repos.find(item => String(item.id) === event.target.value); if (repo) setSelected(items => [...items, repo]); }} className="w-full bg-black/40 border border-white/10 px-4 py-3 text-base text-white"><option value="">+ Add Another Repository</option>{availableRepos.map(repo => <option key={repo.id} value={repo.id}>{repo.full_name}</option>)}</select>
-          <button onClick={submitSelected} disabled={!selected.length || busy || selected.some(repo => wordCount(selectedDescriptions[String(repo.id)] || '') > 50)} className="w-full py-4 premium-gradient-green text-gray-950 font-black text-xs uppercase tracking-widest disabled:opacity-40 flex items-center justify-center gap-2">{busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Star className="w-4 h-4" />} Submit for Discovery</button>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          {leaderboard.length === 0 ? (
+            <p className="text-xs text-gray-500 col-span-full py-4 text-center">No leaderboard entries yet.</p>
+          ) : (
+            leaderboard.slice(0, 10).map((entry, index) => (
+              <div key={entry.username} className="p-4 bg-black/50 border border-white/10 backdrop-blur-md">
+                <div className="flex items-center justify-between text-xs font-mono mb-2">
+                  <span className={`font-black ${index === 0 ? 'text-yellow-400' : index === 1 ? 'text-gray-300' : index === 2 ? 'text-amber-600' : 'text-gray-500'}`}>
+                    #{index + 1}
+                  </span>
+                  <span className="text-[10px] text-green-400 font-bold">{entry.discoveryStarsReceived} ★</span>
+                </div>
+                <p className="text-sm text-white font-bold truncate">@{entry.username}</p>
+                <p className="text-[10px] text-gray-500 mt-1">Starred: {entry.repositoriesStarred}</p>
+              </div>
+            ))
+          )}
         </div>
       </section>
 
-      <section className="glass-card p-6 sm:p-8">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-5 mb-6"><div><h3 className="text-xl font-black text-white uppercase tracking-widest">Community Feed</h3><p className="text-sm text-gray-400 mt-2">One repository at a time</p></div><div className="text-right"><p className="text-xs text-gray-400 uppercase tracking-widest">Daily Star Limit</p><p className="text-xl font-black text-green-400 mt-1">{starsUsed} / 50</p><p className="text-xs text-gray-500">Remaining: {starsRemaining}</p></div></div>
-        {loading ? <div className="py-20 flex justify-center"><Loader2 className="w-10 h-10 text-green-400 animate-spin" /></div> : !current ? <div className="py-20 text-center"><Star className="w-14 h-14 text-gray-600 mx-auto mb-5" /><p className="text-lg font-bold text-gray-300">No repositories are currently available for discovery.</p><p className="text-sm text-gray-500 mt-3">Check back later.</p></div> : <div className="border border-green-400/30 bg-black/30 p-6 sm:p-8"><div className="flex items-start gap-5"><img src={current.repositoryAvatar || user.avatar_url} alt="" className="w-16 h-16 border border-white/10" /><div className="min-w-0"><a href={current.repositoryUrl} target="_blank" rel="noreferrer" className="text-xl sm:text-2xl font-black text-white hover:text-green-400 break-words">{current.repositoryOwner} / {current.repositoryName}</a><p className="text-base text-gray-300 mt-4 leading-relaxed">{current.description || 'No description provided.'}</p><p className="text-sm text-gray-500 mt-5">GitHub stars: {current.githubStars} · Discovery stars: {current.discoveryStars}</p><a href={current.repositoryUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm text-green-400 mt-4 hover:underline">View repository <ExternalLink className="w-4 h-4" /></a></div></div><div className="grid grid-cols-2 gap-4 mt-8"><button onClick={() => interact('SKIP')} disabled={busy} className="py-4 border border-white/20 text-gray-300 font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2"><X className="w-4 h-4" /> Cancel</button><button onClick={() => interact('STAR')} disabled={busy || starsRemaining <= 0} className="py-4 premium-gradient-green text-gray-950 font-black text-xs uppercase tracking-widest disabled:opacity-40 flex items-center justify-center gap-2"><Star className="w-4 h-4" /> Star <ArrowRight className="w-4 h-4" /></button></div>{starsRemaining <= 0 && <p className="text-sm text-red-400 mt-5 text-center">You have reached today's limit of 50 repository stars.</p>}</div>}
-      </section>
+      {/* Add Repository Modal: Directly asks for description before submitting */}
+      {addingRepo && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="glass-card p-6 sm:p-8 w-full max-w-lg bg-black/90 border border-green-500/30">
+            <div className="flex items-center justify-between mb-4 border-b border-white/10 pb-3">
+              <h3 className="text-base font-black text-white uppercase tracking-wider flex items-center gap-2">
+                <Star className="w-5 h-5 text-yellow-400" /> Submit for Discovery
+              </h3>
+              <button onClick={() => setAddingRepo(null)} aria-label="Close" className="text-gray-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="mb-4">
+              <p className="text-xs text-gray-400 uppercase tracking-widest">Selected Repository</p>
+              <p className="text-base font-bold text-white mt-1">{addingRepo.full_name}</p>
+            </div>
+            <div className="mb-4">
+              <label className="text-xs font-black text-gray-300 uppercase tracking-widest block mb-2">
+                Discovery Description (Max 50 words) *
+              </label>
+              <p className="text-[11px] text-gray-500 mb-2">Describe what makes your project unique for other developers.</p>
+              <textarea
+                value={newDescription}
+                onChange={e => setNewDescription(e.target.value)}
+                rows={4}
+                placeholder="e.g. A fast, modern developer tool built for GitHub workflows..."
+                className="w-full bg-black/60 border border-white/10 p-3 text-sm text-white focus:border-green-400 outline-none resize-none"
+              />
+              <div className="flex justify-between items-center mt-2 text-xs">
+                <span className={wordCount(newDescription) > 50 ? 'text-red-400 font-bold' : 'text-gray-400'}>
+                  {wordCount(newDescription)} / 50 words
+                </span>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3 mt-6">
+              <button
+                onClick={() => setAddingRepo(null)}
+                className="py-3 border border-white/15 text-gray-300 font-black text-xs uppercase tracking-widest hover:bg-white/5 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmAddRepo}
+                disabled={busy || wordCount(newDescription) > 50}
+                className="py-3 premium-gradient-green text-gray-950 font-black text-xs uppercase tracking-widest disabled:opacity-40 flex items-center justify-center gap-2"
+              >
+                {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirm & Submit'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Description Modal */}
+      {editing && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="glass-card p-6 sm:p-8 w-full max-w-lg bg-black/90 border border-white/20">
+            <div className="flex items-center justify-between mb-4 border-b border-white/10 pb-3">
+              <h3 className="text-base font-black text-white uppercase tracking-wider">Edit Description</h3>
+              <button onClick={() => setEditing(null)} aria-label="Close" className="text-gray-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-sm font-bold text-white mb-4">{editing.repositoryOwner} / {editing.repositoryName}</p>
+            <textarea
+              value={editDescription}
+              onChange={e => setEditDescription(e.target.value)}
+              rows={4}
+              className="w-full bg-black/60 border border-white/10 p-3 text-sm text-white focus:border-green-400 outline-none resize-none"
+            />
+            <p className={`text-xs mt-2 ${wordCount(editDescription) > 50 ? 'text-red-400 font-bold' : 'text-gray-400'}`}>
+              {wordCount(editDescription)} / 50 words
+            </p>
+            <div className="grid grid-cols-2 gap-3 mt-6">
+              <button
+                onClick={() => setEditing(null)}
+                className="py-3 border border-white/15 text-gray-300 font-black text-xs uppercase tracking-widest hover:bg-white/5 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveDescription}
+                disabled={busy || wordCount(editDescription) > 50}
+                className="py-3 premium-gradient-green text-gray-950 font-black text-xs uppercase tracking-widest disabled:opacity-40"
+              >
+                {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
-
-    <section className="glass-card p-6 sm:p-8"><h3 className="text-lg font-black text-white uppercase tracking-widest flex items-center gap-3"><Trophy className="w-5 h-5 text-yellow-400" /> Repository Star Leaderboard</h3><div className="grid md:grid-cols-3 gap-4 mt-5">{leaderboard.map((entry, index) => <div key={entry.username} className="p-4 bg-white/5 border border-white/10"><p className="text-xs text-gray-500">#{index + 1}</p><p className="text-base text-white font-bold mt-2">@{entry.username}</p><p className="text-sm text-green-400 mt-2">Discovery stars received: {entry.discoveryStarsReceived}</p><p className="text-xs text-gray-400 mt-1">Repositories starred: {entry.repositoriesStarred}</p></div>)}</div></section>
-
-    {editing && <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-5"><div className="glass-card p-6 sm:p-8 w-full max-w-xl"><div className="flex items-center justify-between mb-5"><h3 className="text-lg font-black text-white uppercase">Edit Description</h3><button onClick={() => setEditing(null)} aria-label="Close editor"><X className="w-5 h-5 text-gray-400" /></button></div><p className="text-sm text-gray-300 mb-3">{editing.repositoryOwner} / {editing.repositoryName}</p><textarea value={description} onChange={event => setDescription(event.target.value)} rows={5} className="w-full bg-black/40 border border-white/10 p-4 text-base text-white resize-y" /><p className={`text-sm mt-2 ${wordCount(description) > 50 ? 'text-red-400' : 'text-gray-400'}`}>{wordCount(description)} / 50 words</p><button onClick={saveDescription} disabled={busy || wordCount(description) > 50} className="w-full mt-5 py-4 premium-gradient-green text-gray-950 font-black text-xs uppercase tracking-widest disabled:opacity-40">Save Description</button></div></div>}
-  </div>;
+  );
 }

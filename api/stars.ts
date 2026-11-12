@@ -2,12 +2,15 @@ import prisma from './db.js';
 import { Prisma } from '@prisma/client';
 import type { ApiRequest, ApiResponse } from './types.js';
 
-const MAX_STARS_PER_DAY = 50;
+const MAX_STARS_PER_DAY = 10;
+const MAX_ACTIVE_REPOS = 2;
 
 function today() {
-  const date = new Date();
-  date.setHours(0, 0, 0, 0);
-  return date;
+  // 24-hour reset boundary calculated using Indian Standard Time (IST, UTC+5:30)
+  const nowUtc = Date.now();
+  const istOffsetMs = 5.5 * 60 * 60 * 1000;
+  const istDate = new Date(nowUtc + istOffsetMs);
+  return new Date(Date.UTC(istDate.getUTCFullYear(), istDate.getUTCMonth(), istDate.getUTCDate()));
 }
 
 async function getUser(token: string) {
@@ -26,26 +29,57 @@ async function payload(currentUserId: string) {
     where: { status: 'ACTIVE', userId: { not: currentUserId }, id: { notIn: interactions.map(item => item.submissionId) } },
     orderBy: { createdAt: 'desc' }, take: 100,
   });
-  const now = Date.now();
+
+  // Calculate submitters' star activity: developers who star more repositories get their submissions prioritized first!
+  const allStarredInteractions = await prisma.discoveryRepositoryInteraction.groupBy({
+    by: ['actorId'],
+    where: { action: 'STAR' },
+    _count: { submissionId: true },
+  });
+  const submitterStarMap = new Map(allStarredInteractions.map(item => [item.actorId, item._count.submissionId]));
+
   const feed = candidates.sort((left, right) => {
-    const score = (item: typeof left) => {
-      const ageDays = Math.max(0, (now - item.createdAt.getTime()) / 86400000);
-      return Math.log1p(item.discoveryStars) * 3 + 2 / (1 + ageDays) - item.exposureCount * 0.15 + Math.random() * 0.5;
-    };
-    return score(right) - score(left);
+    const leftSubmitterStars = submitterStarMap.get(left.userId) || 0;
+    const rightSubmitterStars = submitterStarMap.get(right.userId) || 0;
+    if (rightSubmitterStars !== leftSubmitterStars) {
+      return rightSubmitterStars - leftSubmitterStars; // Highest starrers' repos surfaced first
+    }
+    return right.discoveryStars - left.discoveryStars;
   }).slice(0, 25);
+
   if (feed.length) await prisma.$transaction(feed.map(item => prisma.discoveryRepositorySubmission.update({ where: { id: item.id }, data: { exposureCount: { increment: 1 } } })));
-  const leaderboard = await prisma.discoveryRepositorySubmission.groupBy({ by: ['userId'], where: { status: 'ACTIVE' }, _sum: { discoveryStars: true }, _count: { id: true }, orderBy: { _sum: { discoveryStars: 'desc' } }, take: 10 });
-  const starredRepositories = await prisma.discoveryRepositoryInteraction.groupBy({ by: ['actorId'], where: { action: 'STAR' }, _count: { submissionId: true } });
+  
+  // Repository Star Leaderboard: strictly top 10
+  const leaderboard = await prisma.discoveryRepositorySubmission.groupBy({
+    by: ['userId'],
+    where: { status: 'ACTIVE' },
+    _sum: { discoveryStars: true },
+    _count: { id: true },
+    orderBy: { _sum: { discoveryStars: 'desc' } },
+    take: 10,
+  });
+
+  const starredRepositories = await prisma.discoveryRepositoryInteraction.groupBy({
+    by: ['actorId'],
+    where: { action: 'STAR' },
+    _count: { submissionId: true },
+  });
   const starredRepositoryMap = new Map(starredRepositories.map(item => [item.actorId, item._count.submissionId]));
   const users = await prisma.user.findMany({ where: { id: { in: leaderboard.map(item => item.userId) } } });
   const userMap = new Map(users.map(user => [user.id, user]));
+
   return {
-    submissions, feed,
+    submissions,
+    feed,
     starsUsed: usage?.starsUsed || 0,
     starsRemaining: Math.max(0, MAX_STARS_PER_DAY - (usage?.starsUsed || 0)),
     maxStarsPerDay: MAX_STARS_PER_DAY,
-    leaderboard: leaderboard.map(item => ({ username: userMap.get(item.userId)?.githubUsername || 'Unknown', discoveryStarsReceived: item._sum.discoveryStars || 0, repositoriesStarred: starredRepositoryMap.get(item.userId) || 0 })),
+    maxActiveRepos: MAX_ACTIVE_REPOS,
+    leaderboard: leaderboard.map(item => ({
+      username: userMap.get(item.userId)?.githubUsername || 'Unknown',
+      discoveryStarsReceived: item._sum.discoveryStars || 0,
+      repositoriesStarred: starredRepositoryMap.get(item.userId) || 0,
+    })),
   };
 }
 
@@ -61,12 +95,48 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
 
     if (action === 'submit') {
       const repositories = Array.isArray(req.body.repositories) ? req.body.repositories : [req.body.repo];
-      if (!repositories.length || repositories.some((repo: any) => !repo?.id || !repo?.name || !repo?.owner?.login || !repo?.html_url)) return res.status(400).json({ error: 'Invalid repository submission' });
-      if (repositories.some((repo: any) => String(repo.discoveryDescription || repo.description || '').trim().split(/\s+/).filter(Boolean).length > 50)) return res.status(400).json({ error: 'Each repository description must be 50 words or fewer.' });
+      if (!repositories.length || repositories.some((repo: any) => !repo?.id || !repo?.name || !repo?.owner?.login || !repo?.html_url)) {
+        return res.status(400).json({ error: 'Invalid repository submission' });
+      }
+      if (repositories.some((repo: any) => String(repo.discoveryDescription || repo.description || '').trim().split(/\s+/).filter(Boolean).length > 50)) {
+        return res.status(400).json({ error: 'Each repository description must be 50 words or fewer.' });
+      }
+
+      // Enforce maximum 2 active repositories per user
+      const existingActive = await prisma.discoveryRepositorySubmission.findMany({
+        where: { userId: currentUser.id, status: 'ACTIVE' },
+        select: { githubRepoId: true },
+      });
+      const existingRepoIds = new Set(existingActive.map(r => r.githubRepoId));
+      const newReposCount = repositories.filter((r: any) => !existingRepoIds.has(String(r.id))).length;
+
+      if (existingActive.length + newReposCount > MAX_ACTIVE_REPOS) {
+        return res.status(400).json({
+          error: `You can only have up to ${MAX_ACTIVE_REPOS} active repositories at a time. Delete an existing submission first.`,
+        });
+      }
+
       const created = await prisma.$transaction(repositories.map((repo: any) => prisma.discoveryRepositorySubmission.upsert({
         where: { userId_githubRepoId: { userId: currentUser.id, githubRepoId: String(repo.id) } },
-        update: { repositoryName: repo.name, repositoryOwner: repo.owner.login, repositoryUrl: repo.html_url, repositoryAvatar: repo.owner.avatar_url || null, githubStars: repo.stargazers_count || 0, description: typeof repo.discoveryDescription === 'string' ? repo.discoveryDescription : repo.description || null, status: 'ACTIVE' },
-        create: { userId: currentUser.id, githubRepoId: String(repo.id), repositoryName: repo.name, repositoryOwner: repo.owner.login, repositoryUrl: repo.html_url, repositoryAvatar: repo.owner.avatar_url || null, githubStars: repo.stargazers_count || 0, description: typeof repo.discoveryDescription === 'string' ? repo.discoveryDescription : repo.description || null },
+        update: {
+          repositoryName: repo.name,
+          repositoryOwner: repo.owner.login,
+          repositoryUrl: repo.html_url,
+          repositoryAvatar: repo.owner.avatar_url || null,
+          githubStars: repo.stargazers_count || 0,
+          description: typeof repo.discoveryDescription === 'string' ? repo.discoveryDescription : repo.description || null,
+          status: 'ACTIVE',
+        },
+        create: {
+          userId: currentUser.id,
+          githubRepoId: String(repo.id),
+          repositoryName: repo.name,
+          repositoryOwner: repo.owner.login,
+          repositoryUrl: repo.html_url,
+          repositoryAvatar: repo.owner.avatar_url || null,
+          githubStars: repo.stargazers_count || 0,
+          description: typeof repo.discoveryDescription === 'string' ? repo.discoveryDescription : repo.description || null,
+        },
       })));
       return res.status(201).json({ submissions: created });
     }
@@ -94,7 +164,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
         catch (error: any) { if (error?.code === 'P2002') throw new Error('You have already interacted with this repository.'); throw error; }
         const usage = await transaction.dailyDiscoveryUsage.findUnique({ where: { userId_date: { userId: currentUser.id, date: today() } } });
         if (interactionAction === 'STAR') {
-          if ((usage?.starsUsed || 0) >= MAX_STARS_PER_DAY) throw new Error("You have reached today's limit of 50 repository stars.");
+          if ((usage?.starsUsed || 0) >= MAX_STARS_PER_DAY) throw new Error(`You have reached today's limit of ${MAX_STARS_PER_DAY} repository stars.`);
           await transaction.discoveryRepositorySubmission.update({ where: { id: submissionId }, data: { discoveryStars: { increment: 1 } } });
           await transaction.dailyDiscoveryUsage.upsert({ where: { userId_date: { userId: currentUser.id, date: today() } }, update: { starsUsed: { increment: 1 } }, create: { userId: currentUser.id, date: today(), starsUsed: 1 } });
           return { starsUsed: (usage?.starsUsed || 0) + 1 };

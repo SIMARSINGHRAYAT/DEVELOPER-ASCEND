@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { checkRepoStarred, starRepo, checkUserFollowed, followUser } from '../utils/github';
-import { SUPPORT_REPOSITORY, MAINTAINER_PROFILE } from '../config';
+import { starRepo, followUser } from '../utils/github';
+import { SUPPORT_REPOSITORIES, MAINTAINER_PROFILE } from '../config';
 import { checkUserStatus } from '../utils/api';
-import { Star, UserPlus, CheckCircle2, Loader2, ChevronRight } from 'lucide-react';
+import { Star, UserPlus, CheckCircle2, Loader2, ChevronRight, ShieldCheck } from 'lucide-react';
 import { cn } from '../utils/cn';
 
 interface SupportProjectProps {
@@ -14,11 +14,10 @@ export function SupportProject({ token, onComplete }: SupportProjectProps) {
   const [isStarred, setIsStarred] = useState(false);
   const [isFollowed, setIsFollowed] = useState(false);
   const [loadingStar, setLoadingStar] = useState(false);
+  const [starProgress, setStarProgress] = useState<{ current: number; total: number } | null>(null);
   const [loadingFollow, setLoadingFollow] = useState(false);
   const [checking, setChecking] = useState(true);
   const [error, setError] = useState('');
-
-  const [repoOwner, repoName] = SUPPORT_REPOSITORY.split('/');
 
   useEffect(() => {
     let mounted = true;
@@ -32,13 +31,14 @@ export function SupportProject({ token, onComplete }: SupportProjectProps) {
           setIsStarred(status.repositoryStarred);
           setIsFollowed(status.maintainerFollowed);
           if (status.requirementsComplete) {
+            localStorage.setItem('dev_ascend_requirements_done', 'true');
             onComplete();
           }
           setChecking(false);
         }
       } catch (err: any) {
         if (mounted) {
-          setError('Failed to verify GitHub status. ' + err.message);
+          setError('Failed to verify GitHub status: ' + (err.message || 'Network error'));
           setChecking(false);
         }
       }
@@ -56,23 +56,28 @@ export function SupportProject({ token, onComplete }: SupportProjectProps) {
     };
   }, [token, onComplete]);
 
-  const handleStar = async () => {
-    if (isStarred) return;
+  const handleStarAll = async () => {
+    if (isStarred || loadingStar) return;
     setLoadingStar(true);
     setError('');
+    setStarProgress({ current: 0, total: SUPPORT_REPOSITORIES.length });
     try {
-      await starRepo(token, repoOwner, repoName);
+      for (let i = 0; i < SUPPORT_REPOSITORIES.length; i++) {
+        const [owner, name] = SUPPORT_REPOSITORIES[i].split('/');
+        await starRepo(token, owner, name).catch(() => undefined);
+        setStarProgress({ current: i + 1, total: SUPPORT_REPOSITORIES.length });
+      }
       setIsStarred(true);
       void checkUserStatus(token).catch(() => undefined);
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || 'Failed to star some repositories');
     } finally {
       setLoadingStar(false);
     }
   };
 
   const handleFollow = async () => {
-    if (isFollowed) return;
+    if (isFollowed || loadingFollow) return;
     setLoadingFollow(true);
     setError('');
     try {
@@ -80,65 +85,75 @@ export function SupportProject({ token, onComplete }: SupportProjectProps) {
       setIsFollowed(true);
       void checkUserStatus(token).catch(() => undefined);
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || 'Failed to follow maintainer');
     } finally {
       setLoadingFollow(false);
     }
   };
 
+  const handleFinish = () => {
+    localStorage.setItem('dev_ascend_requirements_done', 'true');
+    onComplete();
+  };
+
   return (
     <div className="max-w-3xl mx-auto text-center min-w-0">
-      <div className="glass-card p-10 relative overflow-hidden group">
-        <h2 className="text-3xl font-black text-white mb-4 uppercase tracking-tighter">Support the Project</h2>
-        <p className="text-sm text-gray-400 mb-8 max-w-xl mx-auto">
-          Help us grow the community, star our repository and follow the maintainer to show your support.
+      <div className="glass-card p-8 sm:p-12 relative overflow-hidden group border border-white/10 bg-black/40 backdrop-blur-xl">
+        <div className="w-16 h-16 rounded-2xl bg-green-500/10 border border-green-500/20 flex items-center justify-center mx-auto mb-6 text-green-400">
+          <ShieldCheck className="w-8 h-8" />
+        </div>
+        <h2 className="text-3xl font-black text-white mb-3 uppercase tracking-tighter">Support the Community</h2>
+        <p className="text-sm text-gray-400 mb-8 max-w-xl mx-auto leading-relaxed">
+          Show your support to unlock all Developer Ascend tools. Star our 6 featured repositories and follow the maintainer to proceed.
         </p>
 
         {error && <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-400 text-sm">{error}</div>}
 
         <div className="space-y-4 mb-10">
-          {/* Option 1 */}
+          {/* Star 6 Repositories Button */}
           <button
-            onClick={handleStar}
+            onClick={handleStarAll}
             disabled={checking || isStarred || loadingStar}
             className={cn(
               "w-full py-5 px-6 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-between shadow-xl",
-              isStarred ? "bg-green-500/20 text-green-400 border border-green-500/30 cursor-default" : "bg-white/5 border border-white/10 text-white hover:bg-white/10 btn-hover-effect"
+              isStarred ? "bg-green-500/20 text-green-400 border border-green-500/30 cursor-default" : "bg-black/40 border border-white/10 text-white hover:bg-white/10 btn-hover-effect"
             )}
           >
             <div className="flex items-center gap-4">
-              <Star className="w-5 h-5" />
-              <span>Star the Repository</span>
+              <Star className="w-5 h-5 text-yellow-400" />
+              <span>
+                {isStarred ? "All 6 Repositories Starred" : starProgress ? `Starring Repositories (${starProgress.current}/${starProgress.total})...` : "Star All 6 Repositories"}
+              </span>
             </div>
-            {checking || loadingStar ? <Loader2 className="w-5 h-5 animate-spin" /> : isStarred && <CheckCircle2 className="w-5 h-5 text-green-400" />}
+            {checking || loadingStar ? <Loader2 className="w-5 h-5 animate-spin text-green-400" /> : isStarred && <CheckCircle2 className="w-5 h-5 text-green-400" />}
           </button>
 
-          {/* Option 2 */}
+          {/* Follow Maintainer Button */}
           <button
             onClick={handleFollow}
             disabled={checking || isFollowed || loadingFollow}
             className={cn(
               "w-full py-5 px-6 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-between shadow-xl",
-              isFollowed ? "bg-green-500/20 text-green-400 border border-green-500/30 cursor-default" : "bg-white/5 border border-white/10 text-white hover:bg-white/10 btn-hover-effect"
+              isFollowed ? "bg-green-500/20 text-green-400 border border-green-500/30 cursor-default" : "bg-black/40 border border-white/10 text-white hover:bg-white/10 btn-hover-effect"
             )}
           >
             <div className="flex items-center gap-4">
-              <UserPlus className="w-5 h-5" />
-              <span>Follow the Maintainer</span>
+              <UserPlus className="w-5 h-5 text-blue-400" />
+              <span>{isFollowed ? `@${MAINTAINER_PROFILE} Followed` : `Follow Maintainer (@${MAINTAINER_PROFILE})`}</span>
             </div>
-            {checking || loadingFollow ? <Loader2 className="w-5 h-5 animate-spin" /> : isFollowed && <CheckCircle2 className="w-5 h-5 text-green-400" />}
+            {checking || loadingFollow ? <Loader2 className="w-5 h-5 animate-spin text-blue-400" /> : isFollowed && <CheckCircle2 className="w-5 h-5 text-green-400" />}
           </button>
         </div>
 
         <button
-          onClick={onComplete}
+          onClick={handleFinish}
           disabled={!isStarred || !isFollowed}
           className={cn(
             "w-full py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl flex items-center justify-center gap-2 transition-all",
-            isStarred && isFollowed ? "premium-gradient-purple text-white btn-hover-effect" : "bg-white/5 text-gray-600 cursor-not-allowed"
+            isStarred && isFollowed ? "premium-gradient-green text-gray-950 font-black btn-hover-effect" : "bg-white/5 text-gray-600 cursor-not-allowed opacity-50"
           )}
         >
-          Continue to Features <ChevronRight className="w-4 h-4" />
+          Enter Dashboard <ChevronRight className="w-4 h-4" />
         </button>
       </div>
     </div>

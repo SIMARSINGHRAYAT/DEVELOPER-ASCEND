@@ -76,10 +76,10 @@ export async function fetchRepoCollaborators(token: string, owner: string, repo:
   return collaborators;
 }
 
-export async function createRepository(token: string, name: string): Promise<GitHubRepo> {
+export async function createRepository(token: string, name: string, initReadme: boolean = true): Promise<GitHubRepo> {
   const res = await ghFetch('/user/repos', token, {
     method: 'POST',
-    body: JSON.stringify({ name, auto_init: true, private: false }),
+    body: JSON.stringify({ name, auto_init: initReadme, private: false }),
     headers: { 'Content-Type': 'application/json' }
   });
   if (!res.ok) await handleGitError(res, 'Failed to create repository');

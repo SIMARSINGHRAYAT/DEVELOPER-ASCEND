@@ -14,16 +14,26 @@ interface UserStatusResponse {
   };
 }
 
-async function checkGitHubStatus(token: string, repoOwner: string, repoName: string, targetUser: string) {
+const SUPPORT_REPOSITORIES = [
+  'SIMARSINGHRAYAT/DEVELOPER-ASCEND',
+  'SIMARSINGHRAYAT/GitHubUniverse.com',
+  'SIMARSINGHRAYAT/ML-Arena_Challenge-2026-Team_KILZZCODE',
+  'SIMARSINGHRAYAT/GitHubUpgrade.com',
+  'SIMARSINGHRAYAT/LINUX-DISTROS-APP-CENTER',
+  'SIMARSINGHRAYAT/LINUX-SHORTCUT-CENTER',
+];
+
+async function checkGitHubStatus(token: string, maintainer: string) {
   try {
-    // Check if repository is starred
-    const starRes = await fetch(`https://api.github.com/user/starred/${repoOwner}/${repoName}`, {
+    // Check main repo
+    const [mainOwner, mainRepo] = SUPPORT_REPOSITORIES[0].split('/');
+    const starRes = await fetch(`https://api.github.com/user/starred/${mainOwner}/${mainRepo}`, {
       headers: { 'Authorization': `token ${token}` }
     });
     const starred = starRes.status === 204;
 
-    // Check if user follows target user
-    const followRes = await fetch(`https://api.github.com/user/following/${targetUser}`, {
+    // Check if user follows maintainer
+    const followRes = await fetch(`https://api.github.com/user/following/${maintainer}`, {
       headers: { 'Authorization': `token ${token}` }
     });
     const followed = followRes.status === 204;
@@ -68,12 +78,9 @@ export default async function handler(
     const githubId = githubUser.id;
     const githubUsername = githubUser.login;
 
-    // Check GitHub requirements
-    const repoOwner = process.env.SUPPORT_REPO_OWNER || 'SIMARSINGHRAYAT';
-    const repoName = process.env.SUPPORT_REPO_NAME || 'DEVELOPER-ASCEND';
     const maintainer = process.env.SUPPORT_MAINTAINER || 'SIMARSINGHRAYAT';
 
-    const { starred, followed } = await checkGitHubStatus(token, repoOwner, repoName, maintainer);
+    const { starred, followed } = await checkGitHubStatus(token, maintainer);
 
     // Check if user exists in database
     let user = await prisma.user.findUnique({
@@ -81,6 +88,11 @@ export default async function handler(
     });
 
     const isNew = !user;
+
+    // Persist verified completion: if user previously completed it, keep them completed!
+    const effectiveStarred = starred || Boolean(user?.repositoryStarred);
+    const effectiveFollowed = followed || Boolean(user?.maintainerFollowed);
+    const requirementsComplete = effectiveStarred && effectiveFollowed;
 
     // Create or update user
     if (!user) {
@@ -93,13 +105,12 @@ export default async function handler(
           githubBio: githubUser.bio || null,
           githubFollowersCount: githubUser.followers || 0,
           githubFollowingCount: githubUser.following || 0,
-          repositoryStarred: starred,
-          maintainerFollowed: followed,
+          repositoryStarred: effectiveStarred,
+          maintainerFollowed: effectiveFollowed,
           lastRequirementCheck: new Date()
         }
       });
     } else {
-      // Update existing user with latest GitHub info and status
       user = await prisma.user.update({
         where: { id: user.id },
         data: {
@@ -108,8 +119,8 @@ export default async function handler(
           githubBio: githubUser.bio || null,
           githubFollowersCount: githubUser.followers || 0,
           githubFollowingCount: githubUser.following || 0,
-          repositoryStarred: starred,
-          maintainerFollowed: followed,
+          repositoryStarred: effectiveStarred,
+          maintainerFollowed: effectiveFollowed,
           lastRequirementCheck: new Date()
         }
       });
@@ -117,9 +128,9 @@ export default async function handler(
 
     return res.status(200).json({
       isNew,
-      repositoryStarred: starred,
-      maintainerFollowed: followed,
-      requirementsComplete: starred && followed,
+      repositoryStarred: effectiveStarred,
+      maintainerFollowed: effectiveFollowed,
+      requirementsComplete,
       user: {
         id: user.id,
         githubUsername: user.githubUsername,
