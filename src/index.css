@@ -33,25 +33,49 @@ body::before {
   inset: 0;
   pointer-events: none;
   z-index: 20;
-  background: repeating-linear-gradient(0deg, transparent 0 3px, rgba(255,255,255,.018) 3px 4px);
+  background: repeating-linear-gradient(0deg, transparent 0 3px, rgba(255, 255, 255, .018) 3px 4px);
 }
 
-h1, h2, h3, button, label, select, input {
+h1,
+h2,
+h3,
+button,
+label,
+select,
+input {
   font-family: 'Press Start 2P', monospace;
 }
 
-h2 { text-shadow: 4px 4px 0 #102e3a; }
+h2 {
+  text-shadow: 4px 4px 0 #102e3a;
+}
 
-button, a, [role='button'] { image-rendering: pixelated; }
-button { border-radius: 0 !important; }
-input, select { border-radius: 0 !important; outline-color: #9dff38; }
-input:focus, select:focus { box-shadow: 4px 4px 0 rgba(157, 255, 56, .35); }
+button,
+a,
+[role='button'] {
+  image-rendering: pixelated;
+}
+
+button {
+  border-radius: 0 !important;
+}
+
+input,
+select {
+  border-radius: 0 !important;
+  outline-color: #9dff38;
+}
+
+input:focus,
+select:focus {
+  box-shadow: 4px 4px 0 rgba(157, 255, 56, .35);
+}
 
 /* Convert the existing panels into crisp, game-like HUD windows. */
 .glass-card {
   @apply bg-black/70 border-2 border-cyan-400/30 shadow-none transition-none;
   border-radius: 0 !important;
-  box-shadow: 6px 6px 0 rgba(0, 0, 0, .48), inset 0 0 0 2px rgba(255,255,255,.025);
+  box-shadow: 6px 6px 0 rgba(0, 0, 0, .48), inset 0 0 0 2px rgba(255, 255, 255, .025);
 }
 
 .glass-card::before {
@@ -63,36 +87,70 @@ input:focus, select:focus { box-shadow: 4px 4px 0 rgba(157, 255, 56, .35); }
   pointer-events: none;
 }
 
-.premium-gradient-purple, .premium-gradient-green, .premium-gradient-red {
+.premium-gradient-purple,
+.premium-gradient-green,
+.premium-gradient-red {
   background-image: linear-gradient(90deg, #12d6a0, #9dff38) !important;
   color: #071014 !important;
   border: 2px solid #d9ff9e !important;
   box-shadow: 4px 4px 0 #061115 !important;
 }
 
-.premium-gradient-red { background-image: linear-gradient(90deg, #ff6b4a, #ffb02e) !important; }
-.premium-gradient-green { background-image: linear-gradient(90deg, #9dff38, #12d6a0) !important; }
-.btn-hover-effect:hover, button:hover { transform: translate(-2px, -2px); filter: brightness(1.12); }
-.btn-hover-effect:active, button:active { transform: translate(2px, 2px); box-shadow: none !important; }
-.rounded-full { border-radius: 0 !important; }
-.rounded-2xl, .rounded-3xl, .rounded-xl, .rounded-lg { border-radius: 0 !important; }
+.premium-gradient-red {
+  background-image: linear-gradient(90deg, #ff6b4a, #ffb02e) !important;
+}
 
-.staggered-list > * { animation: slideUp .35s steps(4, end) forwards; }
+.premium-gradient-green {
+  background-image: linear-gradient(90deg, #9dff38, #12d6a0) !important;
+}
 
-.app-shell, .app-shell * {
+.btn-hover-effect:hover,
+button:hover {
+  transform: translate(-2px, -2px);
+  filter: brightness(1.12);
+}
+
+.btn-hover-effect:active,
+button:active {
+  transform: translate(2px, 2px);
+  box-shadow: none !important;
+}
+
+.rounded-full {
+  border-radius: 0 !important;
+}
+
+.rounded-2xl,
+.rounded-3xl,
+.rounded-xl,
+.rounded-lg {
+  border-radius: 0 !important;
+}
+
+.staggered-list>* {
+  animation: slideUp .35s steps(4, end) forwards;
+}
+
+.app-shell,
+.app-shell * {
   font-family: 'VT323', monospace;
   letter-spacing: 0;
 }
 
-.app-shell h1, .app-shell h2, .app-shell h3,
-.app-shell button, .app-shell label, .app-shell select, .app-shell input {
+.app-shell h1,
+.app-shell h2,
+.app-shell h3,
+.app-shell button,
+.app-shell label,
+.app-shell select,
+.app-shell input {
   font-family: 'Press Start 2P', monospace;
 }
 
 .welcome-title {
-  font-size: clamp(1.2rem, 4vw, 2.75rem);
+  font-size: clamp(1.4rem, 4.8vw, 3.4rem);
   white-space: nowrap;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
   max-width: 100%;
   text-align: center;
   margin-left: auto;
@@ -127,10 +185,23 @@ input:focus, select:focus { box-shadow: 4px 4px 0 rgba(157, 255, 56, .35); }
 }
 
 @keyframes drop-github {
-  0% { transform: translateY(-18vh); opacity: 0; }
-  12% { opacity: .12; }
-  88% { opacity: .12; }
-  100% { transform: translateY(118vh); opacity: 0; }
+  0% {
+    transform: translateY(-18vh);
+    opacity: 0;
+  }
+
+  12% {
+    opacity: .12;
+  }
+
+  88% {
+    opacity: .12;
+  }
+
+  100% {
+    transform: translateY(118vh);
+    opacity: 0;
+  }
 }
 
 .repo-menu {
@@ -143,7 +214,7 @@ input:focus, select:focus { box-shadow: 4px 4px 0 rgba(157, 255, 56, .35); }
   max-height: min(62vh, 560px);
 }
 
-.repo-list > div {
+.repo-list>div {
   min-height: 56px;
 }
 
@@ -161,29 +232,41 @@ input:focus, select:focus { box-shadow: 4px 4px 0 rgba(157, 255, 56, .35); }
 }
 
 @media (max-width: 640px) {
-  .welcome-title { font-size: clamp(0.85rem, 5.2vw, 1.45rem); }
-  .repo-menu { left: -1rem; right: -1rem; }
-  .repo-list { max-height: 58vh; }
-  .floating-github { opacity: .08; }
+  .welcome-title {
+    font-size: clamp(1rem, 5.5vw, 1.65rem);
+  }
+
+  .repo-menu {
+    left: -1rem;
+    right: -1rem;
+  }
+
+  .repo-list {
+    max-height: 58vh;
+  }
+
+  .floating-github {
+    opacity: .08;
+  }
 }
 
 @layer components {
   .glass-card {
     @apply bg-gray-900/65 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl transition-all duration-300;
   }
-  
+
   .premium-gradient-purple {
     @apply bg-gradient-to-br from-emerald-400 via-teal-500 to-cyan-600;
   }
-  
+
   .premium-gradient-red {
     @apply bg-gradient-to-br from-red-500 via-orange-500 to-rose-600;
   }
-  
+
   .premium-gradient-green {
     @apply bg-gradient-to-br from-green-500 via-teal-500 to-emerald-600;
   }
-  
+
   .btn-hover-effect {
     @apply hover:scale-[1.02] active:scale-[0.98] transition-all duration-200;
   }
@@ -193,11 +276,18 @@ input:focus, select:focus { box-shadow: 4px 4px 0 rgba(157, 255, 56, .35); }
   }
 
   @keyframes floating {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-5px); }
+
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+
+    50% {
+      transform: translateY(-5px);
+    }
   }
 
-  .staggered-list > * {
+  .staggered-list>* {
     opacity: 0;
     transform: translateY(10px);
     animation: slideUp 0.4s ease forwards;
@@ -214,13 +304,16 @@ input:focus, select:focus { box-shadow: 4px 4px 0 rgba(157, 255, 56, .35); }
 ::-webkit-scrollbar {
   width: 12px;
 }
+
 ::-webkit-scrollbar-track {
   background: #081218;
 }
+
 ::-webkit-scrollbar-thumb {
   background: #12d6a0;
   border: 3px solid #081218;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: #9dff38;
 }
