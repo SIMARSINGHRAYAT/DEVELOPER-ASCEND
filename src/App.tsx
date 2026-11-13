@@ -59,8 +59,8 @@ const modeLabels: Record<AppMode, string> = {
 const modeDescriptions: Record<AppMode, string> = {
   quickdraw_badge: 'Close an issue within seconds to trigger the QuickDraw achievement.',
   yolo_badge: 'Merge a pull request directly without code review to trigger the YOLO achievement.',
-  pull_shark: 'Merge authentic pull requests across repositories to advance Pull Shark.',
-  pair_extraordinaire: 'Merge co-authored pull requests with recognized collaborators for Pair Extraordinaire.',
+  pull_shark: 'Merge 2 sequential pull requests in your repository to unlock Pull Shark.',
+  pair_extraordinaire: 'Merge co-authored commits with recognized collaborators for Pair Extraordinaire.',
 };
 
 // ─── Utility ─────────────────────────────────────────────────────────
@@ -106,17 +106,18 @@ export default function App() {
   const [quickdrawBadgeTemplates, setQuickdrawBadgeTemplates] = useState<QuickdrawBadgeTemplate[]>([
     { id: uid(), title: `Quickdraw Badge Update`, body: `Automated issue closure at ${new Date().toISOString()}` }
   ]);
-  const [yoloBadgeTemplates, setYOLOBadgeTemplates] = useState<YOLOBadgeTemplate[]>([]);
-  const [prTemplates, setPRTemplates] = useState<PRTemplate[]>([]);
+  const [yoloBadgeTemplates, setYOLOBadgeTemplates] = useState<YOLOBadgeTemplate[]>([
+    { id: uid(), title: `YOLO Achievement - Merge Without Review`, branchName: `yolo-${Date.now()}`, filePath: `README.md`, fileContent: '', coAuthors: [] }
+  ]);
+  const [prTemplates, setPRTemplates] = useState<PRTemplate[]>([
+    { id: uid(), title: `Pull Shark - Pull Request #1`, branchName: `pull-shark-1-${Date.now()}`, body: `Pull Shark PR #1`, filePath: `README.md`, fileContent: '' },
+    { id: uid(), title: `Pull Shark - Pull Request #2`, branchName: `pull-shark-2-${Date.now()}`, body: `Pull Shark PR #2`, filePath: `README.md`, fileContent: '' },
+  ]);
   const [pairTemplates, setPairTemplates] = useState<PairTemplate[]>([]);
 
   // Mode state
   const [appMode, setAppMode] = useState<AppMode>('quickdraw_badge');
-  const [autoMerge, setAutoMerge] = useState(true);
-  const [mergeMethod, setMergeMethod] = useState<MergeMethod>('merge');
-  const [deleteBranchAfterMerge, setDeleteBranchAfterMerge] = useState(true);
   const [coAuthors, setCoAuthors] = useState<CoAuthor[]>([{ name: '', email: '' }]);
-  const [pullSharkReviewer, setPullSharkReviewer] = useState('');
 
   // Progress state
   const [createdItems, setCreatedItems] = useState<CreatedItem[]>([]);
@@ -224,7 +225,9 @@ export default function App() {
     setAppMode(mode);
     setError('');
     if (mode === 'quickdraw_badge') {
-      setQuickdrawBadgeTemplates([{ id: uid(), title: `Quickdraw Badge Update`, body: `Automated issue closure at ${new Date().toISOString()}` }]);
+      generateQuickdrawBadge();
+    } else if (mode === 'yolo_badge') {
+      generateYOLOBadge();
     } else if (mode === 'pull_shark') {
       generatePRs();
     }
@@ -235,23 +238,21 @@ export default function App() {
   };
 
   const generateYOLOBadge = () => {
-    if (!isValidEmail(coAuthors[0].email)) { setError('Enter the collaborator email associated with their GitHub account.'); return; }
     setYOLOBadgeTemplates([{
-      id: uid(), title: `YOLO Badge Update`, branchName: `yolo-${Date.now()}`,
-      filePath: `badges/yolo.md`, fileContent: `# YOLO Badge\nGenerated at ${new Date().toISOString()}`,
-      coAuthors: [coAuthors[0]]
+      id: uid(),
+      title: `YOLO Achievement - Merge Without Review`,
+      branchName: `yolo-${Date.now()}`,
+      filePath: `README.md`,
+      fileContent: '',
+      coAuthors: []
     }]);
   };
 
   const generatePRs = () => {
-    setPRTemplates([{
-      id: uid(), 
-      title: `Pull Shark Achievement`,
-      branchName: `pull-shark-${Date.now()}`,
-      body: `Contribution to Pull Shark achievement.`, 
-      filePath: `README.md`,
-      fileContent: ''
-    }]);
+    setPRTemplates([
+      { id: uid(), title: `Pull Shark - Pull Request #1`, branchName: `pull-shark-1-${Date.now()}`, body: `Pull Shark PR #1`, filePath: `README.md`, fileContent: '' },
+      { id: uid(), title: `Pull Shark - Pull Request #2`, branchName: `pull-shark-2-${Date.now()}`, body: `Pull Shark PR #2`, filePath: `README.md`, fileContent: '' },
+    ]);
   };
 
   const addCoAuthor = () => setCoAuthors(prev => [...prev, { name: '', email: '' }]);
@@ -260,23 +261,25 @@ export default function App() {
   const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
   const generatePairTemplates = () => {
-    const valid = coAuthors.filter(ca => ca.name && ca.email);
+    const valid = coAuthors.filter(ca => ca.name.trim() && ca.email.trim());
     if (valid.length === 0 || valid.some(ca => !isValidEmail(ca.email))) { 
-      setError('Every collaborator needs a valid email associated with their GitHub account.'); 
+      setError('Enter a valid collaborator name and their verified GitHub email.'); 
       return; 
     }
     setError('');
     setPairTemplates([{
       id: uid(), title: `Pair Session #1`, branchName: `pair-1-${Date.now()}`,
-      body: `Co-authored session with ${valid.length} collaborator(s).\n\nIMPORTANT: For Pair Extraordinaire badge, the co-author email must be registered in their GitHub account settings.`, 
+      body: `Co-authored session with ${valid.length} collaborator(s).\n\nPair Extraordinaire badge contribution.`, 
       coAuthors: valid,
-      files: [{ path: `pair/session-${Date.now()}.md`, content: `# Pair Programming Session\n\nParticipants: ${valid.map(ca => ca.name).join(', ')}\nCreated: ${new Date().toISOString()}\n\nPair session for Pair Extraordinaire achievement.` }]
+      files: [{ path: `README.md`, content: `\n\n<!-- Pair Extraordinaire Contribution -->\nCo-authored session at ${new Date().toISOString()}` }]
     }]);
   };
 
   const commitAuthor = user && userEmail ? { name: user.login, email: userEmail } : undefined;
 
   // ── Workflows ──
+
+  // 1. QuickDraw Workflow: Open issue and close within seconds
   const startQuickdrawBadgeWorkflow = async () => {
     if (!selectedRepo || quickdrawBadgeTemplates.length === 0) return;
     cancelRef.current = false; pauseRef.current = false; setIsPaused(false);
@@ -298,6 +301,7 @@ export default function App() {
     setIsCreating(false); setStep(4);
   };
 
+  // 2. YOLO Workflow: Create branch, commit change, open PR, merge DIRECTLY without review
   const startYOLOBadgeWorkflow = async () => {
     if (!selectedRepo || yoloBadgeTemplates.length === 0) return;
     if (selectedRepo.private) { setError('YOLO Achievement requires a PUBLIC repository.'); return; }
@@ -307,24 +311,28 @@ export default function App() {
     setCreatedItems(items);
     const owner = selectedRepo.owner.login; const repo = selectedRepo.name; const baseBranch = selectedRepo.default_branch;
     try {
-      const baseSHA = await getDefaultBranchSHA(token, owner, repo, baseBranch);
       const t = yoloBadgeTemplates[0];
-      setCreatedItems(prev => prev.map(ci => ci.id === t.id ? { ...ci, status: 'creating', substatus: 'Creating branch...' } : ci));
+      setCreatedItems(prev => prev.map(ci => ci.id === t.id ? { ...ci, status: 'creating', substatus: 'Fetching branch...' } : ci));
+      const baseSHA = await getDefaultBranchSHA(token, owner, repo, baseBranch);
+      
+      setCreatedItems(prev => prev.map(ci => ci.id === t.id ? { ...ci, substatus: 'Creating branch...' } : ci));
       await createBranch(token, owner, repo, t.branchName, baseSHA);
-      setCreatedItems(prev => prev.map(ci => ci.id === t.id ? { ...ci, substatus: 'Committing with Co-author...' } : ci));
-      await createMultiFileCommitWithCoAuthors(token, owner, repo, t.branchName, [{ path: t.filePath, content: t.fileContent }], t.title, t.coAuthors, commitAuthor);
+      
+      setCreatedItems(prev => prev.map(ci => ci.id === t.id ? { ...ci, substatus: 'Modifying README...' } : ci));
+      let content = '';
+      try { content = await getFileContent(token, owner, repo, 'README.md', baseBranch); } catch {}
+      const newContent = `${content}\n\n<!-- YOLO Achievement -->\nMerged PR without code review at ${new Date().toISOString()}`;
+      await createFileOnBranch(token, owner, repo, t.branchName, 'README.md', newContent, 'Update README for YOLO achievement', commitAuthor);
+
       setCreatedItems(prev => prev.map(ci => ci.id === t.id ? { ...ci, substatus: 'Opening Pull Request...' } : ci));
-      const pr = await createPullRequest(token, owner, repo, t.title, 'YOLO flow — instant merge.', t.branchName, baseBranch);
-      const reviewer = t.coAuthors[0].name.trim();
-      if (reviewer) {
-        setCreatedItems(prev => prev.map(ci => ci.id === t.id ? { ...ci, substatus: `Requesting review from @${reviewer}...` } : ci));
-        await requestPRReview(token, owner, repo, pr.number, [reviewer]);
-        await delay(2000);
-      }
+      const pr = await createPullRequest(token, owner, repo, t.title, 'YOLO achievement flow — merged directly without code review.', t.branchName, baseBranch);
+      
+      // CRITICAL: NO REVIEW REQUESTED (this triggers YOLO achievement)
       setCreatedItems(prev => prev.map(ci => ci.id === t.id ? { ...ci, status: 'merging', substatus: 'Checking mergeability...', url: pr.html_url, number: pr.number } : ci));
       const mergeState = await waitForMergeable(token, owner, repo, pr.number, 45, 1000);
       if (!mergeState.mergeable && !mergeState.mergeable_state.includes('still calculating')) throw new Error(`PR #${pr.number} cannot be merged: ${mergeState.mergeable_state}.`);
-      setCreatedItems(prev => prev.map(ci => ci.id === t.id ? { ...ci, substatus: 'Merging instantly...' } : ci));
+      
+      setCreatedItems(prev => prev.map(ci => ci.id === t.id ? { ...ci, substatus: 'Merging directly without review...' } : ci));
       const mergeResult = await mergePullRequest(token, owner, repo, pr.number, 'merge', 3);
       if (!mergeResult.merged) throw new Error(`GitHub did not merge PR #${pr.number}.`);
       await verifyMergedPullRequest(token, owner, repo, pr.number);
@@ -336,6 +344,7 @@ export default function App() {
     setIsCreating(false); setStep(4);
   };
 
+  // 3. Pull Shark Workflow: 2 sequential pull requests in the SAME repository
   const startCreatingPRs = async () => {
     if (!selectedRepo) return;
     cancelRef.current = false; pauseRef.current = false; setIsPaused(false);
@@ -343,71 +352,99 @@ export default function App() {
     const items: CreatedItem[] = [];
     setCreatedItems(items);
 
+    const owner = selectedRepo.owner.login;
+    const repo = selectedRepo.name;
+    const base = selectedRepo.default_branch;
+
     try {
-      for (let repoNum = 1; repoNum <= 2; repoNum++) {
-        const repoName = `pull-shark-repo-${repoNum}-${Date.now()}`;
-        const itemId = `pull-shark-${repoNum}-${Date.now()}`;
+      // Step 0: Ensure README exists on base branch
+      let currentReadme = '';
+      try {
+        currentReadme = await getFileContent(token, owner, repo, 'README.md', base);
+      } catch (e) {
+        currentReadme = `# ${repo}\n\nDeveloper Ascend Playground.`;
+        try {
+          await createFileOnBranch(token, owner, repo, base, 'README.md', currentReadme, 'Initial commit with README.md', commitAuthor);
+        } catch {}
+      }
+
+      // Perform 2 sequential PRs in the SAME repository
+      for (let prNum = 1; prNum <= 2; prNum++) {
+        const branchName = `pull-shark-${prNum}-${Date.now()}`;
+        const itemId = `pull-shark-${prNum}-${Date.now()}`;
         const item: CreatedItem = {
           id: itemId,
-          title: `Pull Shark - Repository ${repoNum}`,
+          title: `Pull Shark - Pull Request #${prNum}`,
           type: 'pull_shark',
           status: 'pending',
-          branchName: `feature-${repoNum}`
+          branchName
         };
         setCreatedItems(prev => [...prev, item]);
 
         try {
-          setCreatedItems(prev => prev.map(ci => ci.id === itemId ? { ...ci, status: 'creating', substatus: 'Creating repository...' } : ci));
-          const newRepo = await createRepository(token, repoName, true);
-          const owner = newRepo.owner.login;
-          let baseSHA = await getDefaultBranchSHA(token, owner, newRepo.name, newRepo.default_branch);
-          const base = newRepo.default_branch;
+          // 1. Fetch latest base SHA (with retry after previous merge)
+          setCreatedItems(prev => prev.map(ci => ci.id === itemId ? { ...ci, status: 'creating', substatus: `Fetching branch state for PR #${prNum}...` } : ci));
+          const baseSHA = await getDefaultBranchSHAWithRetry(token, owner, repo, base, undefined, 5, 1000);
 
-          setCreatedItems(prev => prev.map(ci => ci.id === itemId ? { ...ci, substatus: 'Creating branch...' } : ci));
-          await createBranch(token, owner, newRepo.name, `feature-${repoNum}`, baseSHA);
+          // 2. Create branch
+          setCreatedItems(prev => prev.map(ci => ci.id === itemId ? { ...ci, substatus: `Creating branch ${branchName}...` } : ci));
+          await createBranch(token, owner, repo, branchName, baseSHA);
 
-          setCreatedItems(prev => prev.map(ci => ci.id === itemId ? { ...ci, substatus: 'Modifying README...' } : ci));
-          const currentContent = await getFileContent(token, owner, newRepo.name, 'README.md', base);
-          const newContent = currentContent + `\n\n<!-- Pull Shark Achievement PR ${repoNum} -->\nUpdated at ${new Date().toISOString()}`;
-          await createFileOnBranch(token, owner, newRepo.name, `feature-${repoNum}`, 'README.md', newContent, `Update README for Pull Shark ${repoNum}`, commitAuthor);
+          // 3. Edit README.md
+          setCreatedItems(prev => prev.map(ci => ci.id === itemId ? { ...ci, substatus: `Editing README.md...` } : ci));
+          let existingContent = currentReadme;
+          try {
+            existingContent = await getFileContent(token, owner, repo, 'README.md', branchName);
+          } catch {}
+          const updatedContent = `${existingContent}\n\n<!-- Pull Shark Contribution #${prNum} -->\nMerged PR #${prNum} at ${new Date().toISOString()}`;
+          await createFileOnBranch(token, owner, repo, branchName, 'README.md', updatedContent, `Update README for Pull Shark (#${prNum})`, commitAuthor);
+          currentReadme = updatedContent;
 
-          setCreatedItems(prev => prev.map(ci => ci.id === itemId ? { ...ci, substatus: 'Creating PR...' } : ci));
-          const pr = await createPullRequest(token, owner, newRepo.name, `Pull Shark Achievement PR ${repoNum}`, `Contribution to Pull Shark achievement. Repository #${repoNum}.`, `feature-${repoNum}`, base);
+          // 4. Create Pull Request
+          setCreatedItems(prev => prev.map(ci => ci.id === itemId ? { ...ci, substatus: `Opening Pull Request #${prNum}...` } : ci));
+          const pr = await createPullRequest(
+            token,
+            owner,
+            repo,
+            `Pull Shark Contribution #${prNum}`,
+            `Automated pull request #${prNum} for the Pull Shark achievement on GitHub profile.`,
+            branchName,
+            base
+          );
 
-          const reviewer = pullSharkReviewer.trim();
-          if (reviewer) {
-            setCreatedItems(prev => prev.map(ci => ci.id === itemId ? { ...ci, substatus: `Requesting review...` } : ci));
-            try { await requestPRReview(token, owner, newRepo.name, pr.number, [reviewer]); await delay(2000); } catch (e) {}
+          // 5. Check mergeability
+          setCreatedItems(prev => prev.map(ci => ci.id === itemId ? { ...ci, status: 'merging', substatus: 'Checking mergeability...', url: pr.html_url, number: pr.number } : ci));
+          const mergeState = await waitForMergeable(token, owner, repo, pr.number, 45, 1000);
+          if (!mergeState.mergeable && !mergeState.mergeable_state.includes('still calculating')) {
+            throw new Error(`PR #${pr.number} cannot be merged: ${mergeState.mergeable_state}.`);
           }
 
-          if (autoMerge) {
-            setCreatedItems(prev => prev.map(ci => ci.id === itemId ? { ...ci, status: 'merging', substatus: 'Checking mergeability...' } : ci));
-            const mergeState = await waitForMergeable(token, owner, newRepo.name, pr.number, 45, 1000);
-            if (!mergeState.mergeable && !mergeState.mergeable_state.includes('still calculating')) {
-              throw new Error(`PR #${pr.number} cannot be merged: ${mergeState.mergeable_state}.`);
-            }
-            setCreatedItems(prev => prev.map(ci => ci.id === itemId ? { ...ci, substatus: 'Merging...' } : ci));
-            const mergeResult = await mergePullRequest(token, owner, newRepo.name, pr.number, mergeMethod, 3);
-            if (!mergeResult.merged) throw new Error(`GitHub did not merge PR #${pr.number}.`);
-            await verifyMergedPullRequest(token, owner, newRepo.name, pr.number);
-            if (deleteBranchAfterMerge) {
-              try { await deleteBranch(token, owner, newRepo.name, `feature-${repoNum}`); } catch {}
-            }
-            setCreatedItems(prev => prev.map(ci => ci.id === itemId ? { ...ci, status: 'merged', merged: true, substatus: undefined, url: pr.html_url, number: pr.number } : ci));
-          } else {
-            setCreatedItems(prev => prev.map(ci => ci.id === itemId ? { ...ci, status: 'success', url: pr.html_url, number: pr.number, substatus: 'PR opened' } : ci));
+          // 6. Merge PR
+          setCreatedItems(prev => prev.map(ci => ci.id === itemId ? { ...ci, substatus: 'Merging pull request...' } : ci));
+          const mergeResult = await mergePullRequest(token, owner, repo, pr.number, 'merge', 3);
+          if (!mergeResult.merged) throw new Error(`GitHub did not merge PR #${pr.number}.`);
+          await verifyMergedPullRequest(token, owner, repo, pr.number);
+
+          // 7. Delete feature branch
+          try { await deleteBranch(token, owner, repo, branchName); } catch {}
+          setCreatedItems(prev => prev.map(ci => ci.id === itemId ? { ...ci, status: 'merged', merged: true, substatus: undefined, url: pr.html_url, number: pr.number } : ci));
+
+          // Brief pause before second PR
+          if (prNum < 2) {
+            await delay(2000);
           }
         } catch (e: any) {
           setCreatedItems(prev => prev.map(ci => ci.id === itemId ? { ...ci, status: 'error', error: e.message } : ci));
         }
-        await delay(delayMs);
       }
     } catch (err: any) {
       setError(err.message);
     }
-    setIsCreating(false); setStep(4);
+    setIsCreating(false);
+    setStep(4);
   };
 
+  // 4. Pair Extraordinaire Workflow: Co-authored commits on merged PR
   const startCreatingPairs = async () => {
     if (!selectedRepo) return;
     const vError = validatePairConfig(coAuthors, pairTemplates); if (vError) { setError(vError); return; }
@@ -426,27 +463,38 @@ export default function App() {
         try {
           setCreatedItems(prev => prev.map((ci, idx) => idx === i ? { ...ci, status: 'creating', substatus: 'Creating branch...' } : ci));
           await createBranch(token, owner, repo, pt.branchName, baseSHA);
-          await createMultiFileCommitWithCoAuthors(token, owner, repo, pt.branchName, pt.files, pt.title, pt.coAuthors, commitAuthor);
+          
+          let existingContent = '';
+          try { existingContent = await getFileContent(token, owner, repo, 'README.md', base); } catch {}
+          const newContent = `${existingContent}\n\n<!-- Pair Extraordinaire Contribution -->\nCo-authored session at ${new Date().toISOString()}`;
+
+          setCreatedItems(prev => prev.map((ci, idx) => idx === i ? { ...ci, substatus: 'Committing with Co-author trailer...' } : ci));
+          await createMultiFileCommitWithCoAuthors(
+            token,
+            owner,
+            repo,
+            pt.branchName,
+            [{ path: 'README.md', content: newContent }],
+            pt.title,
+            pt.coAuthors,
+            commitAuthor
+          );
+
           setCreatedItems(prev => prev.map((ci, idx) => idx === i ? { ...ci, substatus: 'Opening Pull Request...' } : ci));
           const result = await createPullRequest(token, owner, repo, pt.title, pt.body, pt.branchName, base);
 
-          const reviewer = pt.coAuthors[0].name.trim();
-          if (reviewer) {
-            setCreatedItems(prev => prev.map((ci, idx) => idx === i ? { ...ci, substatus: `Requesting review from @${reviewer}...` } : ci));
-            await requestPRReview(token, owner, repo, result.number, [reviewer]);
-            await delay(2000);
-          }
-
-          setCreatedItems(prev => prev.map((ci, idx) => idx === i ? { ...ci, status: 'merging', substatus: 'Merging...', url: result.html_url, number: result.number } : ci));
+          setCreatedItems(prev => prev.map((ci, idx) => idx === i ? { ...ci, status: 'merging', substatus: 'Checking mergeability...', url: result.html_url, number: result.number } : ci));
           const mergeState = await waitForMergeable(token, owner, repo, result.number, 45, 1000);
           if (!mergeState.mergeable && !mergeState.mergeable_state.includes('still calculating')) throw new Error(`PR #${result.number} cannot be merged: ${mergeState.mergeable_state}.`);
+          
+          setCreatedItems(prev => prev.map((ci, idx) => idx === i ? { ...ci, substatus: 'Merging Pull Request...' } : ci));
           const mergeResult = await mergePullRequest(token, owner, repo, result.number, 'merge', 3);
           if (!mergeResult.merged) throw new Error(`GitHub did not merge PR #${result.number}.`);
           await verifyMergedPullRequest(token, owner, repo, result.number);
           await verifyCoAuthorTrailer(token, owner, repo, result.number, pt.coAuthors);
-          if (deleteBranchAfterMerge) try { await deleteBranch(token, owner, repo, pt.branchName); } catch {}
+          
+          try { await deleteBranch(token, owner, repo, pt.branchName); } catch {}
           setCreatedItems(prev => prev.map((ci, idx) => idx === i ? { ...ci, status: 'merged', merged: true, substatus: undefined, url: result.html_url, number: result.number } : ci));
-          try { await delay(500); baseSHA = await getDefaultBranchSHAWithRetry(token, owner, repo, base, baseSHA, 3, 1000); } catch {}
         } catch (e: any) {
           setCreatedItems(prev => prev.map((ci, idx) => idx === i ? { ...ci, status: 'error', error: e.message } : ci));
         }
@@ -522,7 +570,7 @@ export default function App() {
         {appStep === 'welcome' && !showAuth && (
           <div className="max-w-4xl w-full mx-auto text-center flex flex-col items-center justify-center min-w-0">
             <h2 className="welcome-title font-black leading-tight text-green-400 uppercase text-center mx-auto">DEVELOPER ASCEND</h2>
-            <p className="welcome-quote italic text-gray-200 font-medium leading-relaxed max-w-2xl mx-auto mt-8">“Programs must be written for people to read, and only incidentally for machines to execute.”</p>
+            <p className="welcome-quote italic text-gray-200 font-medium leading-relaxed max-w-2xl mx-auto mt-8 text-xl sm:text-2xl">“Programs must be written for people to read, and only incidentally for machines to execute.”</p>
             <button
               onClick={() => setShowAuth(true)}
               className="mt-10 px-14 py-6 rounded-2xl glass-card bg-black/15 hover:bg-white/10 text-white font-black text-sm uppercase tracking-[0.25em] border-2 border-green-400/80 hover:border-green-400 shadow-[0_0_30px_rgba(53,255,154,0.35),inset_0_1px_2px_rgba(255,255,255,0.4)] transition-all btn-hover-effect cursor-pointer"
@@ -872,7 +920,7 @@ export default function App() {
                   {appMode === 'quickdraw_badge' && (
                     <div className="space-y-5 w-full">
                       <div className="p-4 glass-card border border-purple-500/30 text-sm text-purple-200 leading-relaxed font-bold">
-                        Step 1: Click "Initialize Node" to prepare an automated issue creation and swift closure trigger.
+                        Step 1: Click "Initialize Node" to prepare an automated issue creation and swift closure trigger in {selectedRepo.name}.
                       </div>
                       <button
                         onClick={generateQuickdrawBadge}
@@ -885,72 +933,30 @@ export default function App() {
 
                   {/* YOLO BADGE MODE */}
                   {appMode === 'yolo_badge' && (
-                    <div className="space-y-4 w-full">
+                    <div className="space-y-5 w-full">
                       <div className="p-4 glass-card border border-orange-500/30 text-sm text-orange-200 leading-relaxed font-bold">
-                        Step 1: Select a collaborator and their verified Git email for the commit trailer.
-                      </div>
-                      <div className="space-y-3">
-                        <div>
-                          <label className="text-xs font-black text-gray-300 uppercase tracking-widest block mb-1">Reviewer Collaborator</label>
-                          <select
-                            value={coAuthors[0].name}
-                            onChange={e => updateCoAuthor(0, 'name', e.target.value)}
-                            disabled={collaboratorsLoading || collaborators.length === 0}
-                            className="w-full glass-card border border-white/20 px-4 py-3 text-sm text-white"
-                          >
-                            <option value="">{collaboratorsLoading ? 'Loading collaborators...' : collaborators.length ? 'Select collaborator' : 'No collaborators found'}</option>
-                            {collaborators.map(c => <option key={c.id} value={c.login}>{c.login}</option>)}
-                          </select>
-                        </div>
-                        <div>
-                          <label className="text-xs font-black text-gray-300 uppercase tracking-widest block mb-1">Git Email Address</label>
-                          <input
-                            value={coAuthors[0].email}
-                            onChange={e => updateCoAuthor(0, 'email', e.target.value)}
-                            placeholder="collaborator-github-email@example.com"
-                            className="w-full glass-card border border-white/20 px-4 py-3 text-sm text-white"
-                          />
-                        </div>
+                        Step 1: Prepares an automated pull request in {selectedRepo.name} that merges directly without any code review to earn YOLO.
                       </div>
                       <button
                         onClick={generateYOLOBadge}
-                        disabled={!coAuthors[0].name || !isValidEmail(coAuthors[0].email)}
-                        className="w-full py-4 bg-gradient-to-r from-red-600 to-orange-600 text-white font-black text-xs uppercase tracking-[0.2em] shadow-xl disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                        className="w-full py-4 bg-gradient-to-r from-red-600 to-orange-600 text-white font-black text-xs uppercase tracking-[0.2em] shadow-xl cursor-pointer"
                       >
-                        BUILD YOLO FLOW
+                        INITIALIZE YOLO FLOW
                       </button>
                     </div>
                   )}
 
                   {/* PULL SHARK MODE */}
                   {appMode === 'pull_shark' && (
-                    <div className="space-y-4 w-full">
+                    <div className="space-y-5 w-full">
                       <div className="p-4 glass-card border border-green-500/30 text-sm text-green-200 leading-relaxed font-bold">
-                        Step 1: Prepares 2 dedicated repositories and authentic pull requests to fulfill Pull Shark requirements.
+                        Step 1: Prepares 2 sequential pull requests in {selectedRepo.name}, editing README.md and merging each one to unlock Pull Shark.
                       </div>
-                      <div>
-                        <label className="text-xs font-black text-gray-300 uppercase tracking-widest block mb-1">Optional Reviewer</label>
-                        <select
-                          value={pullSharkReviewer}
-                          onChange={e => setPullSharkReviewer(e.target.value)}
-                          disabled={collaboratorsLoading || collaborators.length === 0}
-                          className="w-full glass-card border border-white/20 px-4 py-3 text-sm text-white"
-                        >
-                          <option value="">None (Self-managed pull request)</option>
-                          {collaborators.map(c => <option key={c.id} value={c.login}>{c.login}</option>)}
-                        </select>
-                      </div>
-                      <button
-                        onClick={() => setAutoMerge(!autoMerge)}
-                        className="w-full py-3 text-xs font-black uppercase tracking-widest glass-card border border-white/20 text-gray-300 cursor-pointer"
-                      >
-                        AUTO-MERGE: {autoMerge ? 'ENABLED' : 'MANUAL'}
-                      </button>
                       <button
                         onClick={generatePRs}
                         className="w-full py-4 premium-gradient-green text-gray-950 font-black text-xs uppercase tracking-widest cursor-pointer"
                       >
-                        GENERATE PULL REQUEST QUEUE
+                        GENERATE 2 PULL REQUESTS
                       </button>
                     </div>
                   )}
@@ -959,23 +965,20 @@ export default function App() {
                   {appMode === 'pair_extraordinaire' && (
                     <div className="space-y-4 w-full">
                       <div className="p-4 glass-card border border-amber-500/30 text-sm text-amber-200 leading-relaxed font-bold">
-                        Step 1: Add recognized collaborators with their verified GitHub email for co-authored git commits.
+                        Step 1: Enter your collaborator's name and verified GitHub email for the co-authored commit trailer.
                       </div>
                       {coAuthors.map((ca, i) => (
                         <div key={i} className="flex flex-col sm:flex-row gap-2">
-                          <select
+                          <input
                             value={ca.name}
                             onChange={e => updateCoAuthor(i, 'name', e.target.value)}
-                            disabled={collaboratorsLoading || collaborators.length === 0}
+                            placeholder="Collaborator Name or Username"
                             className="flex-1 glass-card border border-white/20 px-3 py-2 text-sm text-white"
-                          >
-                            <option value="">Select collaborator</option>
-                            {collaborators.map(c => <option key={c.id} value={c.login}>{c.login}</option>)}
-                          </select>
+                          />
                           <input
                             value={ca.email}
                             onChange={e => updateCoAuthor(i, 'email', e.target.value)}
-                            placeholder="collaborator-email@example.com"
+                            placeholder="collaborator-github-email@example.com"
                             className="flex-1 glass-card border border-white/20 px-3 py-2 text-sm text-white"
                           />
                           <button onClick={() => removeCoAuthor(i)} className="px-2 text-red-400 hover:text-white cursor-pointer">

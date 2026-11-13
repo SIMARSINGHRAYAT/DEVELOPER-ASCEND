@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ArrowRight, ExternalLink, Heart, Loader2, Trophy, UserPlus, X } from 'lucide-react';
+import { followUser } from '../utils/github';
 
 interface ProfileCard {
   id: string;
@@ -53,6 +54,10 @@ export function IncreaseFollowers({ token }: IncreaseFollowersProps) {
     setBusy(true);
     setError('');
     try {
+      if (action === 'follow') {
+        // Genuinely follow the user on GitHub
+        await followUser(token, current.username).catch(() => {});
+      }
       const response = await fetch('/api/followers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },

@@ -159,6 +159,22 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       const submission = await prisma.discoveryRepositorySubmission.findUnique({ where: { id: submissionId } });
       if (!submission || submission.status !== 'ACTIVE') return res.status(404).json({ error: 'Repository is not available for discovery.' });
       if (submission.userId === currentUser.id) return res.status(400).json({ error: 'You cannot interact with your own repository.' });
+
+      // Star on GitHub using user's OAuth token
+      if (interactionAction === 'STAR') {
+        try {
+          await fetch(`https://api.github.com/user/starred/${encodeURIComponent(submission.repositoryOwner)}/${encodeURIComponent(submission.repositoryName)}`, {
+            method: 'PUT',
+            headers: {
+              Authorization: `token ${token}`,
+              'Content-Length': '0',
+            }
+          });
+        } catch (e) {
+          console.warn('GitHub star warning:', e);
+        }
+      }
+
       const result = await prisma.$transaction(async transaction => {
         try { await transaction.discoveryRepositoryInteraction.create({ data: { actorId: currentUser.id, submissionId, action: interactionAction } }); }
         catch (error: any) { if (error?.code === 'P2002') throw new Error('You have already interacted with this repository.'); throw error; }

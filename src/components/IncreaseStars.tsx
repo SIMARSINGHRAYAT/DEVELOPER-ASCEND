@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { GitHubRepo } from '../types';
 import { ArrowRight, ExternalLink, Loader2, Pencil, Plus, Star, Trash2, Trophy, X, ShieldAlert } from 'lucide-react';
+import { starRepo } from '../utils/github';
 
 interface Submission {
   id: string;
@@ -158,6 +159,10 @@ export function IncreaseStars({ token, user, repos }: IncreaseStarsProps) {
     setBusy(true);
     setError('');
     try {
+      if (interaction === 'STAR') {
+        // Genuinely star the repository on GitHub
+        await starRepo(token, current.repositoryOwner, current.repositoryName).catch(() => {});
+      }
       const response = await fetch('/api/stars', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },

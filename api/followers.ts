@@ -93,6 +93,21 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     const target = await prisma.user.findUnique({ where: { id: targetId } });
     if (!target) return res.status(404).json({ error: 'Profile not found' });
 
+    // Actually follow on GitHub using user's OAuth token
+    if (action === 'follow') {
+      try {
+        await fetch(`https://api.github.com/user/following/${encodeURIComponent(target.githubUsername)}`, {
+          method: 'PUT',
+          headers: {
+            Authorization: `token ${token}`,
+            'Content-Length': '0',
+          }
+        });
+      } catch (e) {
+        console.warn('GitHub follow warning:', e);
+      }
+    }
+
     const result = await prisma.$transaction(async transaction => {
       try { await transaction.discoveryProfileInteraction.create({ data: { actorId: currentUser.id, targetId, action: action === 'follow' ? 'FOLLOW' : 'SKIP' } }); }
       catch (error: any) { if (error?.code === 'P2002') throw new Error('You have already interacted with this profile.'); throw error; }
