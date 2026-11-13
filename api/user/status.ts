@@ -39,12 +39,22 @@ async function checkRequirement(url: string, token: string, requirement: string)
 }
 
 async function checkGitHubStatus(token: string, maintainer: string) {
-  const [mainOwner, mainRepo] = SUPPORT_REPOSITORIES[0].split('/');
-  const [starred, followed] = await Promise.all([
-    checkRequirement(`https://api.github.com/user/starred/${mainOwner}/${mainRepo}`, token, 'repository star'),
+  const [starredRepositories, followed] = await Promise.all([
+    Promise.all(SUPPORT_REPOSITORIES.map(repository => {
+      const [owner, name] = repository.split('/');
+      return checkRequirement(
+        `https://api.github.com/user/starred/${owner}/${name}`,
+        token,
+        `star for ${repository}`
+      );
+    })),
     checkRequirement(`https://api.github.com/user/following/${maintainer}`, token, 'maintainer follow'),
   ]);
-  return { starred, followed };
+
+  return {
+    starred: starredRepositories.every(Boolean),
+    followed,
+  };
 }
 
 export default async function handler(
@@ -81,7 +91,6 @@ export default async function handler(
     const githubUsername = githubUser.login;
     const maintainer = process.env.SUPPORT_MAINTAINER || 'SIMARSINGHRAYAT';
 
-    // Do not use cached true values when GitHub cannot verify the current state.
     let status: { starred: boolean; followed: boolean };
     try {
       status = await checkGitHubStatus(token, maintainer);
