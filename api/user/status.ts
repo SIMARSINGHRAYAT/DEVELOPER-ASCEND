@@ -23,78 +23,78 @@ const SUPPORT_REPOSITORIES = [
   'SIMARSINGHRAYAT/LINUX-SHORTCUT-CENTER',
 ];
 
+async function checkRequirement(url: string, token: string, requirement: string): Promise<boolean> {
+  const response = await fetch(url, {
+    headers: {
+      Authorization: `token ${token}`,
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+    },
+  });
+
+  if (response.status === 204) return true;
+  if (response.status === 404) return false;
+
+  throw new Error(`Unable to verify ${requirement}: GitHub API responded with ${response.status}.`);
+}
+
 async function checkGitHubStatus(token: string, maintainer: string) {
-  try {
-    // Check main repo
-    const [mainOwner, mainRepo] = SUPPORT_REPOSITORIES[0].split('/');
-    const starRes = await fetch(`https://api.github.com/user/starred/${mainOwner}/${mainRepo}`, {
-      headers: { 'Authorization': `token ${token}` }
-    });
-    const starred = starRes.status === 204;
-
-    // Check if user follows maintainer
-    const followRes = await fetch(`https://api.github.com/user/following/${maintainer}`, {
-      headers: { 'Authorization': `token ${token}` }
-    });
-    const followed = followRes.status === 204;
-
-    return { starred, followed };
-  } catch (error) {
-    console.error('GitHub API error:', error);
-    return { starred: false, followed: false };
-  }
+  const [mainOwner, mainRepo] = SUPPORT_REPOSITORIES[0].split('/');
+  const [starred, followed] = await Promise.all([
+    checkRequirement(`https://api.github.com/user/starred/${mainOwner}/${mainRepo}`, token, 'repository star'),
+    checkRequirement(`https://api.github.com/user/following/${maintainer}`, token, 'maintainer follow'),
+  ]);
+  return { starred, followed };
 }
 
 export default async function handler(
   req: ApiRequest,
   res: ApiResponse<UserStatusResponse | { error: string }>
 ) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const authHeader = req.headers.authorization;
-  if (!authHeader) {
-    return res.status(401).json({ error: 'Missing authorization header' });
-  }
+  if (!authHeader) return res.status(401).json({ error: 'Missing authorization header' });
 
-  const token = authHeader.split(' ')[1];
-  if (!token) {
-    return res.status(401).json({ error: 'Invalid token format' });
+  const [scheme, token] = authHeader.split(' ');
+  if (scheme?.toLowerCase() !== 'bearer' || !token) {
+    return res.status(401).json({ error: 'Invalid authorization header format' });
   }
 
   try {
-    // Fetch current GitHub user
     const userRes = await fetch('https://api.github.com/user', {
-      headers: { 'Authorization': `token ${token}` }
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+      },
     });
 
     if (!userRes.ok) {
-      const errorText = await userRes.text().catch(() => '');
-      return res.status(401).json({ error: `Invalid GitHub token. GitHub API responded with ${userRes.status}. ${errorText}` });
+      return res.status(userRes.status === 401 ? 401 : 502).json({
+        error: `Unable to verify GitHub token. GitHub API responded with ${userRes.status}.`,
+      });
     }
 
     const githubUser = await userRes.json();
     const githubId = githubUser.id;
     const githubUsername = githubUser.login;
-
     const maintainer = process.env.SUPPORT_MAINTAINER || 'SIMARSINGHRAYAT';
 
-    const { starred, followed } = await checkGitHubStatus(token, maintainer);
+    // Do not use cached true values when GitHub cannot verify the current state.
+    let status: { starred: boolean; followed: boolean };
+    try {
+      status = await checkGitHubStatus(token, maintainer);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'GitHub verification failed.';
+      console.error('GitHub requirement verification error:', message);
+      return res.status(502).json({ error: message });
+    }
 
-    // Check if user exists in database
-    let user = await prisma.user.findUnique({
-      where: { githubId }
-    });
-
+    let user = await prisma.user.findUnique({ where: { githubId } });
     const isNew = !user;
+    const requirementsComplete = status.starred && status.followed;
 
-    // Persist verified completion: if user previously completed it, keep them completed!
-    const effectiveStarred = starred || Boolean(user?.repositoryStarred);
-    const effectiveFollowed = followed || Boolean(user?.maintainerFollowed);
-    const requirementsComplete = effectiveStarred && effectiveFollowed;
-
-    // Create or update user
     if (!user) {
       user = await prisma.user.create({
         data: {
@@ -105,42 +105,43 @@ export default async function handler(
           githubBio: githubUser.bio || null,
           githubFollowersCount: githubUser.followers || 0,
           githubFollowingCount: githubUser.following || 0,
-          repositoryStarred: effectiveStarred,
-          maintainerFollowed: effectiveFollowed,
-          lastRequirementCheck: new Date()
-        }
+          repositoryStarred: status.starred,
+          maintainerFollowed: status.followed,
+          lastRequirementCheck: new Date(),
+        },
       });
     } else {
       user = await prisma.user.update({
         where: { id: user.id },
         data: {
+          githubUsername,
           githubName: githubUser.name || null,
           githubAvatar: githubUser.avatar_url || null,
           githubBio: githubUser.bio || null,
           githubFollowersCount: githubUser.followers || 0,
           githubFollowingCount: githubUser.following || 0,
-          repositoryStarred: effectiveStarred,
-          maintainerFollowed: effectiveFollowed,
-          lastRequirementCheck: new Date()
-        }
+          repositoryStarred: status.starred,
+          maintainerFollowed: status.followed,
+          lastRequirementCheck: new Date(),
+        },
       });
     }
 
     return res.status(200).json({
       isNew,
-      repositoryStarred: effectiveStarred,
-      maintainerFollowed: effectiveFollowed,
+      repositoryStarred: status.starred,
+      maintainerFollowed: status.followed,
       requirementsComplete,
       user: {
         id: user.id,
         githubUsername: user.githubUsername,
         githubName: user.githubName,
-        githubAvatar: user.githubAvatar
-      }
+        githubAvatar: user.githubAvatar,
+      },
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('User status error:', errorMessage, error);
-    return res.status(500).json({ error: `Failed to check user status: ${errorMessage}` });
+    return res.status(500).json({ error: 'Failed to check user status.' });
   }
 }
