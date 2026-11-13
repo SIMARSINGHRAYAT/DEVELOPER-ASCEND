@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { starRepo, followUser } from '../utils/github';
-import { SUPPORT_REPOSITORIES, MAINTAINER_PROFILE } from '../config';
+import { SUPPORT_REPOSITORIES } from '../config';
 import { checkUserStatus } from '../utils/api';
 import { Star, UserPlus, CheckCircle2, Loader2, ChevronRight, ShieldCheck } from 'lucide-react';
 import { cn } from '../utils/cn';
@@ -83,7 +83,8 @@ export function SupportProject({ token, onComplete }: SupportProjectProps) {
     setLoadingFollow(true);
     setError('');
     try {
-      await followUser(token, MAINTAINER_PROFILE);
+      const currentStatus = await checkUserStatus(token);
+      await followUser(token, currentStatus.maintainerUsername);
 
       const status = await checkUserStatus(token);
       setIsStarred(status.repositoryStarred);
