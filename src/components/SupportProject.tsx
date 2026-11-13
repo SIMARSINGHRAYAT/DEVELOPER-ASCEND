@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { starRepo, followUser } from '../utils/github';
-import { SUPPORT_REPOSITORIES, MAINTAINER_PROFILE } from '../config';
+import { SUPPORT_REPOSITORIES } from '../config';
 import { checkUserStatus } from '../utils/api';
 import { Star, UserPlus, CheckCircle2, Loader2, ChevronRight, ShieldCheck } from 'lucide-react';
 import { cn } from '../utils/cn';
@@ -20,7 +20,7 @@ export function SupportProject({ token, onComplete }: SupportProjectProps) {
 
   useEffect(() => {
     let mounted = true;
-    let pollInterval: any;
+    let pollInterval: ReturnType<typeof setInterval>;
 
     const verify = async () => {
       try {
@@ -33,21 +33,20 @@ export function SupportProject({ token, onComplete }: SupportProjectProps) {
             onComplete();
           }
           setChecking(false);
+          setError('');
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (mounted) {
-          setError('Failed to verify GitHub status: ' + (err.message || 'Network error'));
+          const message = err instanceof Error ? err.message : 'Network error';
+          setError('Failed to verify GitHub status: ' + message);
           setChecking(false);
         }
       }
     };
 
-    verify();
-
+    void verify();
     pollInterval = setInterval(() => {
-      if (!isStarred || !isFollowed) {
-        verify();
-      }
+      if (!isStarred || !isFollowed) void verify();
     }, 5000);
 
     return () => {
@@ -61,14 +60,19 @@ export function SupportProject({ token, onComplete }: SupportProjectProps) {
     setLoadingStar(true);
     setError('');
     try {
-      for (let i = 0; i < SUPPORT_REPOSITORIES.length; i++) {
-        const [owner, name] = SUPPORT_REPOSITORIES[i].split('/');
-        await starRepo(token, owner, name).catch(() => undefined);
+      for (const repository of SUPPORT_REPOSITORIES) {
+        const [owner, name] = repository.split('/');
+        await starRepo(token, owner, name);
       }
-      setIsStarred(true);
-      void checkUserStatus(token).catch(() => undefined);
-    } catch (err: any) {
-      setError(err.message || 'Failed to complete repository star');
+
+      const status = await checkUserStatus(token);
+      setIsStarred(status.repositoryStarred);
+      setIsFollowed(status.maintainerFollowed);
+      if (!status.repositoryStarred) {
+        throw new Error('GitHub did not confirm the required repository star.');
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to complete repository star');
     } finally {
       setLoadingStar(false);
     }
@@ -79,19 +83,36 @@ export function SupportProject({ token, onComplete }: SupportProjectProps) {
     setLoadingFollow(true);
     setError('');
     try {
-      await followUser(token, MAINTAINER_PROFILE);
-      setIsFollowed(true);
-      void checkUserStatus(token).catch(() => undefined);
-    } catch (err: any) {
-      setError(err.message || 'Failed to follow profile');
+      const currentStatus = await checkUserStatus(token);
+      await followUser(token, currentStatus.maintainerUsername);
+
+      const status = await checkUserStatus(token);
+      setIsStarred(status.repositoryStarred);
+      setIsFollowed(status.maintainerFollowed);
+      if (!status.maintainerFollowed) {
+        throw new Error('GitHub did not confirm the maintainer follow.');
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to follow profile');
     } finally {
       setLoadingFollow(false);
     }
   };
 
-  const handleFinish = () => {
-    localStorage.setItem('dev_ascend_requirements_done', 'true');
-    onComplete();
+  const handleFinish = async () => {
+    setError('');
+    try {
+      const status = await checkUserStatus(token);
+      setIsStarred(status.repositoryStarred);
+      setIsFollowed(status.maintainerFollowed);
+      if (!status.requirementsComplete) {
+        throw new Error('GitHub has not confirmed all onboarding requirements.');
+      }
+      localStorage.setItem('dev_ascend_requirements_done', 'true');
+      onComplete();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to verify onboarding requirements.');
+    }
   };
 
   return (
@@ -108,7 +129,6 @@ export function SupportProject({ token, onComplete }: SupportProjectProps) {
         {error && <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 text-red-300 text-sm font-bold">{error}</div>}
 
         <div className="space-y-4 mb-10 text-left">
-          {/* Repository Star Button */}
           <button
             onClick={handleStarAll}
             disabled={checking || isStarred || loadingStar}
@@ -128,7 +148,6 @@ export function SupportProject({ token, onComplete }: SupportProjectProps) {
             {checking || loadingStar ? <Loader2 className="w-5 h-5 animate-spin text-green-400" /> : isStarred && <CheckCircle2 className="w-6 h-6 text-green-400" />}
           </button>
 
-          {/* Follow Profile Button */}
           <button
             onClick={handleFollow}
             disabled={checking || isFollowed || loadingFollow}

@@ -5,6 +5,7 @@ export interface UserStatus {
   repositoryStarred: boolean;
   maintainerFollowed: boolean;
   requirementsComplete: boolean;
+  maintainerUsername: string;
   user?: {
     id: string;
     githubUsername: string;
