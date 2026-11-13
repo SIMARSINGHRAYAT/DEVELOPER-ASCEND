@@ -6,6 +6,7 @@ interface UserStatusResponse {
   repositoryStarred: boolean;
   maintainerFollowed: boolean;
   requirementsComplete: boolean;
+  maintainerUsername: string;
   user?: {
     id: string;
     githubUsername: string;
@@ -141,6 +142,7 @@ export default async function handler(
       repositoryStarred: status.starred,
       maintainerFollowed: status.followed,
       requirementsComplete,
+      maintainerUsername: maintainer,
       user: {
         id: user.id,
         githubUsername: user.githubUsername,
